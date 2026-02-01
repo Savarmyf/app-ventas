@@ -3,6 +3,7 @@ import json
 from datetime import datetime, date, timedelta
 import pandas as pd
 
+# -------------------- Archivos --------------------
 USUARIOS_FILE = "usuarios.json"
 REGISTROS_FILE = "registros.json"
 NOTAS_FILE = "notas.json"
@@ -49,8 +50,9 @@ if st.session_state.usuario is None:
         user = st.text_input("Usuario")
         password = st.text_input("Contraseña", type="password")
         if st.button("Entrar"):
-            if user in usuarios and usuarios[user] == password:
+            if user in usuarios and usuarios[user]["password"] == password:
                 st.session_state.usuario = user
+                st.session_state.rol = usuarios[user]["rol"]
                 st.rerun()
             else:
                 st.error("Usuario o contraseña incorrectos")
@@ -58,29 +60,75 @@ if st.session_state.usuario is None:
     with tab2:
         new_user = st.text_input("Nuevo usuario")
         new_pass = st.text_input("Nueva contraseña", type="password")
+        new_rol = st.selectbox("Rol", ["miembro", "lider"])
         if st.button("Crear cuenta"):
             if new_user in usuarios:
                 st.warning("Ese usuario ya existe")
             elif not new_user or not new_pass:
                 st.warning("Completá usuario y contraseña")
             else:
-                usuarios[new_user] = new_pass
+                usuarios[new_user] = {
+                    "password": new_pass,
+                    "rol": new_rol,
+                    "equipo": [] if new_rol == "lider" else None,
+                    "solicitudes": [] if new_rol == "lider" else None,
+                    "lider": None if new_rol == "miembro" else None
+                }
                 guardar_json(USUARIOS_FILE, usuarios)
                 st.success("Usuario creado, ahora podés ingresar")
-
     st.stop()
 
 # -------------------- App --------------------
 usuario = st.session_state.usuario
+rol = st.session_state.rol
 
 with st.sidebar:
-    st.success(f"👋 {usuario}")
+    st.success(f"👋 {usuario} ({rol})")
     st.link_button("📘 Guía técnica", GUIA_DRIVE_URL)
     if st.button("🚪 Cerrar sesión"):
         st.session_state.usuario = None
+        st.session_state.rol = None
         st.rerun()
 
 st.divider()
+
+# -------------------- Gestión de líderes --------------------
+if rol == "miembro":
+    st.subheader("👥 Selección de líder")
+    if not usuarios[usuario]["lider"]:
+        lider_seleccionado = st.selectbox(
+            "Elegí tu líder",
+            [u for u, info in usuarios.items() if info["rol"] == "lider"]
+        )
+        if st.button("Solicitar unirme a líder"):
+            usuarios[usuario]["lider"] = lider_seleccionado
+            usuarios[lider_seleccionado]["solicitudes"].append(usuario)
+            guardar_json(USUARIOS_FILE, usuarios)
+            st.success(f"Solicitud enviada a {lider_seleccionado}")
+    else:
+        st.info(f"Esperando aprobación de tu líder: {usuarios[usuario]['lider']}")
+
+elif rol == "lider":
+    st.subheader("👑 Gestión de equipo")
+    st.write("Tu equipo actual:")
+    if usuarios[usuario]["equipo"]:
+        for miembro in usuarios[usuario]["equipo"]:
+            st.write(f"- {miembro}: {usuarios[miembro]}")
+    else:
+        st.write("Aún no tenés miembros en tu equipo.")
+
+    # Aprobar solicitudes
+    if usuarios[usuario]["solicitudes"]:
+        st.write("Solicitudes pendientes:")
+        for sol in usuarios[usuario]["solicitudes"]:
+            col1, col2 = st.columns(2)
+            col1.write(sol)
+            if col2.button(f"Aprobar {sol}"):
+                usuarios[usuario]["equipo"].append(sol)
+                usuarios[sol]["lider"] = usuario
+                usuarios[usuario]["solicitudes"].remove(sol)
+                guardar_json(USUARIOS_FILE, usuarios)
+                st.success(f"{sol} ahora es parte de tu equipo")
 
 # -------------------- Cargas --------------------
 with st.expander("🗓 Cargar contactos del día", expanded=True):
