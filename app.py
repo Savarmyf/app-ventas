@@ -69,7 +69,7 @@ st.divider()
 
 # -------------------- Guía del equipo --------------------
 st.subheader("📘 Guía técnica del equipo")
-if GUIA_DRIVE_URL = "https://drive.google.com/file/d/1jq_fpB4g7ADA8bmOpi5Szo_FiTAwqT9V/view?usp=drive_link"
+if GUIA_DRIVE_URL != "https://drive.google.com/file/d/1jq_fpB4g7ADA8bmOpi5Szo_FiTAwqT9V/view?usp=drive_link"
 :
     st.link_button("Abrir guía en Drive", GUIA_DRIVE_URL)
 else:
@@ -164,3 +164,4 @@ else:
 if st.button("Cerrar sesión"):
     st.session_state.usuario = None
     st.rerun()
+
