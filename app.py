@@ -1,12 +1,14 @@
 import streamlit as st
 import json
 from datetime import datetime, date, timedelta
+import pandas as pd
 
 USUARIOS_FILE = "usuarios.json"
 REGISTROS_FILE = "registros.json"
 NOTAS_FILE = "notas.json"
+DEMOS_FILE = "demostraciones.json"
 
-GUIA_DRIVE_URL = "PEGAR_ACA_TU_LINK_DE_DRIVE"
+GUIA_DRIVE_URL = "https://drive.google.com/file/d/1jq_fpB4g7ADA8bmOpi5Szo_FiTAwqT9V/view?usp=drive_link"
 
 st.set_page_config(page_title="Constancia del Equipo", page_icon="📊")
 st.title("📊 Registro de Constancia del Equipo")
@@ -26,6 +28,7 @@ def guardar_json(ruta, data):
 usuarios = cargar_json(USUARIOS_FILE, {})
 registros = cargar_json(REGISTROS_FILE, {})
 notas = cargar_json(NOTAS_FILE, {})
+demostraciones = cargar_json(DEMOS_FILE, {})
 
 # -------------------- Login / Registro --------------------
 if "usuario" not in st.session_state:
@@ -69,7 +72,7 @@ st.divider()
 
 # -------------------- Guía del equipo --------------------
 st.subheader("📘 Guía técnica del equipo")
-if GUIA_DRIVE_URL != "https://drive.google.com/file/d/1jq_fpB4g7ADA8bmOpi5Szo_FiTAwqT9V/view?usp=drive_link":
+if GUIA_DRIVE_URL != "PEGAR_ACA_TU_LINK_DE_DRIVE":
     st.link_button("Abrir guía en Drive", GUIA_DRIVE_URL)
 else:
     st.info("Pegá el link de Drive en la variable GUIA_DRIVE_URL")
@@ -97,10 +100,32 @@ if st.button("Guardar registro"):
 
 st.divider()
 
-# -------------------- Métricas --------------------
-st.subheader("📊 Tus métricas")
+# -------------------- Cargar demostraciones --------------------
+st.subheader("🎤 Cargar demostraciones del día")
+
+fecha_demo = st.date_input("Fecha demostración", value=date.today(), key="fecha_demo")
+cantidad_demo = st.number_input("Demostraciones de hoy", min_value=0, step=1, key="cantidad_demo")
+
+if st.button("Guardar demostraciones"):
+    demostraciones.setdefault(usuario, [])
+    fecha_str = fecha_demo.strftime("%Y-%m-%d")
+
+    existe = any(r["fecha"] == fecha_str for r in demostraciones[usuario])
+
+    if existe:
+        st.warning("⚠️ Ya cargaste demostraciones para ese día")
+    else:
+        demostraciones[usuario].append({"fecha": fecha_str, "cantidad": cantidad_demo})
+        guardar_json(DEMOS_FILE, demostraciones)
+        st.success("✅ Demostraciones guardadas")
+
+st.divider()
+
+# -------------------- Métricas + Gráfico --------------------
+st.subheader("📊 Tu progreso")
 
 mis_registros = registros.get(usuario, [])
+mis_demos = demostraciones.get(usuario, [])
 
 if mis_registros:
     total = sum(r["cantidad"] for r in mis_registros)
@@ -110,16 +135,37 @@ if mis_registros:
     col1.metric("Total de contactos", total)
     col2.metric("Promedio diario", round(promedio, 2))
 
-    if promedio >= 10:
-        st.success("🚀 Nivel crack. Estás jugando en serio.")
-    elif promedio >= 5:
-        st.info("💪 Muy bien. Constancia real.")
+    # Gráfico 2 líneas
+    df_contactos = pd.DataFrame(mis_registros)
+    df_contactos["fecha"] = pd.to_datetime(df_contactos["fecha"])
+    df_contactos = df_contactos.sort_values("fecha")
+
+    df_demos = pd.DataFrame(mis_demos)
+    if not df_demos.empty:
+        df_demos["fecha"] = pd.to_datetime(df_demos["fecha"])
+        df_demos = df_demos.sort_values("fecha")
+
+    df = pd.merge(
+        df_contactos,
+        df_demos,
+        on="fecha",
+        how="outer",
+        suffixes=("_contactos", "_demos")
+    ).fillna(0)
+
+    df = df.sort_values("fecha").set_index("fecha")
+    st.line_chart(df[["cantidad_contactos", "cantidad_demos"]])
+
+    # Índice de equilibrio
+    total_demos = sum(r["cantidad"] for r in mis_demos)
+    if total > 0:
+        equilibrio = round((total_demos / total) * 100, 2)
+        st.write(f"⚖️ Índice de equilibrio: **{equilibrio}%** (demos / contactos)")
     else:
-        st.warning("🧠 Tranqui. Hoy sumá 1 más que ayer.")
+        st.info("Cargá contactos para calcular el índice de equilibrio")
 
-    # ---- Racha real por fechas consecutivas ----
+    # Racha
     fechas = sorted([datetime.strptime(r["fecha"], "%Y-%m-%d").date() for r in mis_registros], reverse=True)
-
     racha = 1
     for i in range(len(fechas) - 1):
         if fechas[i] - fechas[i + 1] == timedelta(days=1):
@@ -163,5 +209,3 @@ else:
 if st.button("Cerrar sesión"):
     st.session_state.usuario = None
     st.rerun()
-
-
