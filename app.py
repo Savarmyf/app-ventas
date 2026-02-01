@@ -2,9 +2,11 @@ import streamlit as st
 import json
 from datetime import datetime, date, timedelta
 import pandas as pd
+import os
 
 # -------------------- Archivos --------------------
 USUARIOS_FILE = "usuarios.json"
+USUARIOS_BACKUP = "usuarios_backup.json"
 REGISTROS_FILE = "registros.json"
 NOTAS_FILE = "notas.json"
 DEMOS_FILE = "demostraciones.json"
@@ -29,10 +31,23 @@ def guardar_json(ruta, data):
     with open(ruta, "w") as f:
         json.dump(data, f, indent=2)
 
+# -------------------- Usuarios con backup --------------------
+def cargar_usuarios():
+    if os.path.exists(USUARIOS_FILE):
+        return cargar_json(USUARIOS_FILE, {})
+    elif os.path.exists(USUARIOS_BACKUP):
+        return cargar_json(USUARIOS_BACKUP, {})
+    else:
+        return {}
+
+def guardar_usuarios():
+    guardar_json(USUARIOS_FILE, usuarios)
+    guardar_json(USUARIOS_BACKUP, usuarios)
+
 def inicio_semana(fecha):
     return fecha - timedelta(days=fecha.weekday())
 
-usuarios = cargar_json(USUARIOS_FILE, {})
+usuarios = cargar_usuarios()
 registros = cargar_json(REGISTROS_FILE, {})
 notas = cargar_json(NOTAS_FILE, {})
 demostraciones = cargar_json(DEMOS_FILE, {})
@@ -74,7 +89,7 @@ if st.session_state.usuario is None:
                     "solicitudes": [] if new_rol == "lider" else None,
                     "lider": None if new_rol == "miembro" else None
                 }
-                guardar_json(USUARIOS_FILE, usuarios)
+                guardar_usuarios()
                 st.success("Usuario creado, ahora podés ingresar")
     st.stop()
 
@@ -103,7 +118,7 @@ if rol == "miembro":
         if st.button("Solicitar unirme a líder"):
             usuarios[usuario]["lider"] = lider_seleccionado
             usuarios[lider_seleccionado]["solicitudes"].append(usuario)
-            guardar_json(USUARIOS_FILE, usuarios)
+            guardar_usuarios()
             st.success(f"Solicitud enviada a {lider_seleccionado}")
     else:
         st.info(f"Esperando aprobación de tu líder: {usuarios[usuario]['lider']}")
@@ -127,8 +142,17 @@ elif rol == "lider":
                 usuarios[usuario]["equipo"].append(sol)
                 usuarios[sol]["lider"] = usuario
                 usuarios[usuario]["solicitudes"].remove(sol)
-                guardar_json(USUARIOS_FILE, usuarios)
+                guardar_usuarios()
                 st.success(f"{sol} ahora es parte de tu equipo")
+
+    # -------------------- Árbol jerárquico --------------------
+    st.subheader("🌳 Tu red jerárquica")
+    def mostrar_equipo(usuario, nivel=0):
+        st.write(" " * nivel + f"- {usuario} ({usuarios[usuario]['rol']})")
+        if usuarios[usuario]["rol"] == "lider":
+            for miembro in usuarios[usuario]["equipo"]:
+                mostrar_equipo(miembro, nivel + 1)
+    mostrar_equipo(usuario)
 
 # -------------------- Cargas --------------------
 with st.expander("🗓 Cargar contactos del día", expanded=True):
