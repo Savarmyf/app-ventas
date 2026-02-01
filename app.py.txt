@@ -1,0 +1,149 @@
+import streamlit as st
+import json
+from datetime import datetime
+
+USUARIOS_FILE = "usuarios.json"
+REGISTROS_FILE = "registros.json"
+NOTAS_FILE = "notas.json"
+
+st.set_page_config(page_title="Constancia del Equipo", page_icon="📊")
+st.title("📊 Registro de Constancia del Equipo")
+
+# -------------------- Utils --------------------
+def cargar_json(ruta, default):
+    try:
+        with open(ruta, "r") as f:
+            return json.load(f)
+    except:
+        return default
+
+def guardar_json(ruta, data):
+    with open(ruta, "w") as f:
+        json.dump(data, f, indent=2)
+
+usuarios = cargar_json(USUARIOS_FILE, {})
+registros = cargar_json(REGISTROS_FILE, {})
+notas = cargar_json(NOTAS_FILE, {})
+
+# -------------------- Login / Registro --------------------
+if "usuario" not in st.session_state:
+    st.session_state.usuario = None
+
+if st.session_state.usuario is None:
+    st.subheader("🔐 Ingresar / Registrarse")
+
+    tab1, tab2 = st.tabs(["Ingresar", "Registrarse"])
+
+    with tab1:
+        user = st.text_input("Usuario")
+        password = st.text_input("Contraseña", type="password")
+        if st.button("Entrar"):
+            if user in usuarios and usuarios[user] == password:
+                st.session_state.usuario = user
+                st.rerun()
+            else:
+                st.error("Usuario o contraseña incorrectos")
+
+    with tab2:
+        new_user = st.text_input("Nuevo usuario")
+        new_pass = st.text_input("Nueva contraseña", type="password")
+        if st.button("Crear cuenta"):
+            if new_user in usuarios:
+                st.warning("Ese usuario ya existe")
+            elif not new_user or not new_pass:
+                st.warning("Completá usuario y contraseña")
+            else:
+                usuarios[new_user] = new_pass
+                guardar_json(USUARIOS_FILE, usuarios)
+                st.success("✅ Usuario creado, ahora podés ingresar")
+
+    st.stop()
+
+# -------------------- App --------------------
+usuario = st.session_state.usuario
+st.success(f"👋 Bienvenido {usuario}")
+
+st.divider()
+
+# -------------------- Cargar registro diario --------------------
+st.subheader("📝 Cargar registro del día")
+dia = st.text_input("Fecha (DD/MM)", value=datetime.now().strftime("%d/%m"))
+cantidad = st.number_input("Contactos de hoy", min_value=0, step=1)
+
+if st.button("Guardar registro"):
+    registros.setdefault(usuario, [])
+    existe = any(r["dia"] == dia for r in registros[usuario])
+
+    if existe:
+        st.warning("⚠️ Ya cargaste un registro para ese día")
+    else:
+        registros[usuario].append({"dia": dia, "cantidad": cantidad})
+        guardar_json(REGISTROS_FILE, registros)
+        st.success("✅ Registro guardado")
+
+st.divider()
+
+# -------------------- Métricas --------------------
+st.subheader("📊 Tus métricas")
+
+mis_registros = registros.get(usuario, [])
+
+if mis_registros:
+    total = sum(r["cantidad"] for r in mis_registros)
+    promedio = total / len(mis_registros)
+
+    st.metric("Total de contactos", total)
+    st.metric("Promedio diario", round(promedio, 2))
+
+    if promedio >= 10:
+        st.success("🚀 Nivel crack. Estás jugando en serio.")
+    elif promedio >= 5:
+        st.info("💪 Muy bien. Constancia real.")
+    else:
+        st.warning("🧠 Tranqui. Hoy sumá 1 más que ayer.")
+
+    # Racha simple
+    dias = [r["dia"] for r in mis_registros]
+    racha = 1
+    for i in range(len(dias) - 1, 0, -1):
+        if dias[i] != dias[i - 1]:
+            racha += 1
+        else:
+            break
+
+    st.write(f"🔥 Tu racha actual: **{racha} días**")
+else:
+    st.info("Todavía no cargaste registros.")
+
+st.divider()
+
+# -------------------- Notas personales --------------------
+st.subheader("📝 Notas personales (metas, pendientes, ideas)")
+
+nota_actual = notas.get(usuario, "")
+nota_nueva = st.text_area("Escribí tus notas", value=nota_actual, height=150)
+
+if st.button("Guardar notas"):
+    notas[usuario] = nota_nueva
+    guardar_json(NOTAS_FILE, notas)
+    st.success("✅ Notas guardadas")
+
+st.divider()
+
+# -------------------- Ranking equipo (opcional visible) --------------------
+st.subheader("🏆 Ranking del equipo")
+
+ranking = {}
+for user, regs in registros.items():
+    ranking[user] = sum(r["cantidad"] for r in regs)
+
+if ranking:
+    for user, total in sorted(ranking.items(), key=lambda x: x[1], reverse=True):
+        st.write(f"**{user}**: {total} contactos")
+else:
+    st.info("Todavía no hay registros del equipo")
+
+# -------------------- Logout --------------------
+if st.button("Cerrar sesión"):
+    st.session_state.usuario = None
+    st.rerun()
