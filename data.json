@@ -7,7 +7,14 @@
       "equipo": []
     }
   },
-  "registros": {},
+  "registros": {
+    "prueba": [
+      {
+        "fecha": "2026-02-01",
+        "cantidad": 4
+      }
+    ]
+  },
   "demostraciones": {},
   "notas": {},
   "productos": {
