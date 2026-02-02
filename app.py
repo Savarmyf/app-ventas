@@ -146,7 +146,7 @@ elif rol == "lider":
                 st.success(f"{sol} ahora es parte de tu equipo")
 
     # -------------------- Árbol jerárquico --------------------
-    st.subheader("🌳 Tu red jerárquica")
+    st.subheader("🌳 Tu red ")
     def mostrar_equipo(usuario, nivel=0):
         st.write(" " * nivel + f"- {usuario} ({usuarios[usuario]['rol']})")
         if usuarios[usuario]["rol"] == "lider":
@@ -261,3 +261,4 @@ st.subheader("🏆 Ranking del equipo (contactos totales)")
 ranking = {u: sum(r["cantidad"] for r in regs) for u, regs in registros.items()}
 for user, total in sorted(ranking.items(), key=lambda x: x[1], reverse=True):
     st.write(f"**{user}**: {total}")
+
