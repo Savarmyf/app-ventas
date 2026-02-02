@@ -19,7 +19,14 @@
       }
     ]
   },
-  "demostraciones": {},
+  "demostraciones": {
+    "prueba": [
+      {
+        "fecha": "2026-02-02",
+        "cantidad": 1
+      }
+    ]
+  },
   "notas": {},
   "productos": {
     "Cal Mag D": 0,
