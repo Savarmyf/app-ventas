@@ -118,21 +118,31 @@ if st.button("Guardar demos"):
     st.success("Guardado")
 
 # -------------------- Ventas de productos --------------------
-st.subheader("🛒 Ventas de productos")
+st.subheader("🛒 Registrar venta de producto")
 
-for prod in productos:
-    col1, col2 = st.columns([3,1])
-    col1.write(prod)
-    if col2.button(f"+1 {prod}"):
-        productos[prod] += 1
-        ventas.append({"usuario": usuario, "producto": prod, "fecha": date.today().isoformat()})
+lista_productos = list(productos.keys())
+
+if lista_productos:
+    producto_seleccionado = st.selectbox("Productos vendidos:", lista_productos)
+    cantidad_vendida = st.number_input("Cantidad", min_value=1, step=1, value=1)
+
+    if st.button("Registrar venta"):
+        productos[producto_seleccionado] += cantidad_vendida
+
+        for _ in range(cantidad_vendida):
+            ventas.append({
+                "usuario": usuario,
+                "producto": producto_seleccionado,
+                "fecha": date.today().isoformat()
+            })
+
         guardar_data(data, sha)
-        st.success(f"Venta registrada: {prod}")
+        st.success(f"✅ Venta registrada: {producto_seleccionado} x{cantidad_vendida}")
+else:
+    st.info("Todavía no hay productos cargados.")
 
 st.subheader("🏆 Productos más vendidos")
 ranking_prod = sorted(productos.items(), key=lambda x: x[1], reverse=True)
 for p, v in ranking_prod:
-    st.write(f"{p}: {v}")
-
-st.info("✅ Datos guardados en GitHub (no se pierden al redeploy)")
+    st.write(f"• {p}: {v}")
 
