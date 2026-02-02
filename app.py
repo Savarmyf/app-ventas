@@ -7,8 +7,8 @@ import base64
 
 # -------------------- CONFIG --------------------
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]  # lo vamos a cargar en Streamlit Cloud
-OWNER = "TU_USUARIO_GITHUB"
-REPO = "TU_REPO"
+OWNER = "Savarmyf"
+REPO = "app-ventas"
 DATA_PATH = "data.json"
 
 GUIA_DRIVE_URL = "https://drive.google.com/file/d/1jq_fpB4g7ADA8bmOpi5Szo_FiTAwqT9V/view"
@@ -135,3 +135,4 @@ for p, v in ranking_prod:
     st.write(f"{p}: {v}")
 
 st.info("✅ Datos guardados en GitHub (no se pierden al redeploy)")
+
