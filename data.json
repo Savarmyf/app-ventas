@@ -53,7 +53,7 @@
     "Phytopowder Cereza / Naranja": 0,
     "Pack XS (Arandano Uva y Cranberry Grape)": 0,
     "XS Individual": 0,
-    "Batido Chocolate": 0,
+    "Batido Chocolate": 1,
     "Batido Vainilla": 0,
     "Inhibidor de grasas": 0,
     "Acelerador de metabolismo": 0,
@@ -75,6 +75,11 @@
     {
       "usuario": "prueba",
       "producto": "Cal Mag D",
+      "fecha": "2026-02-02"
+    },
+    {
+      "usuario": "prueba",
+      "producto": "Batido Chocolate",
       "fecha": "2026-02-02"
     }
   ]
