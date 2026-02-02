@@ -170,8 +170,16 @@ else:
     st.info("Todavía no hay productos cargados.")
 
 st.subheader("🏆 Productos más vendidos")
-ranking_prod = sorted(productos.items(), key=lambda x: x[1], reverse=True)
-for p, v in ranking_prod:
-    st.write(f"• {p}: {v}")
+
+ranking_prod = [(p, v) for p, v in productos.items() if v > 0]
+ranking_prod = sorted(ranking_prod, key=lambda x: x[1], reverse=True)
+
+if ranking_prod:
+    for p, v in ranking_prod:
+        st.write(f"• {p}: {v}")
+else:
+    st.info("Todavía no hay ventas registradas.")
+
+
 
 
