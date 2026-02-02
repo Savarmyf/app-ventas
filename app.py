@@ -1,56 +1,58 @@
 import streamlit as st
+import requests
+import json
+from datetime import date, datetime, timedelta
 import pandas as pd
-from datetime import datetime, date, timedelta
-import gspread
-from google.oauth2.service_account import Credentials
+import base64
 
 # -------------------- CONFIG --------------------
-st.set_page_config(page_title="Constancia del Equipo", page_icon="📊", layout="centered")
-st.title("📊 Constancia del Equipo")
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]  # lo vamos a cargar en Streamlit Cloud
+OWNER = "TU_USUARIO_GITHUB"
+REPO = "TU_REPO"
+DATA_PATH = "data.json"
 
 GUIA_DRIVE_URL = "https://drive.google.com/file/d/1jq_fpB4g7ADA8bmOpi5Szo_FiTAwqT9V/view"
+
 OBJ_CONTACTOS_SEMANAL = 30
 OBJ_DEMOS_SEMANAL = 5
 
-# -------------------- GOOGLE SHEETS --------------------
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-creds = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=SCOPES
-)
-gc = gspread.authorize(creds)
+st.set_page_config(page_title="Constancia del Equipo", page_icon="📊", layout="centered")
+st.title("📊 Constancia del Equipo")
 
-SPREADSHEET_NAME = "app_ventas_equipo"  # poné este nombre a tu Sheet
-sh = gc.open(SPREADSHEET_NAME)
+# -------------------- GitHub Utils --------------------
+def github_headers():
+    return {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
 
-ws_usuarios = sh.worksheet("usuarios")
-ws_contactos = sh.worksheet("contactos")
-ws_demos = sh.worksheet("demostraciones")
-ws_notas = sh.worksheet("notas")
-ws_productos = sh.worksheet("productos")
-ws_ventas = sh.worksheet("ventas")
+def cargar_data():
+    url = f"https://api.github.com/repos/{OWNER}/{REPO}/contents/{DATA_PATH}"
+    r = requests.get(url, headers=github_headers())
+    content = r.json()["content"]
+    decoded = base64.b64decode(content).decode("utf-8")
+    return json.loads(decoded), r.json()["sha"]
 
-# -------------------- UTILS --------------------
-def get_df(ws):
-    data = ws.get_all_records()
-    return pd.DataFrame(data)
+def guardar_data(data, sha):
+    url = f"https://api.github.com/repos/{OWNER}/{REPO}/contents/{DATA_PATH}"
+    encoded = base64.b64encode(json.dumps(data, indent=2).encode()).decode()
+    payload = {
+        "message": "Update data.json",
+        "content": encoded,
+        "sha": sha
+    }
+    requests.put(url, headers=github_headers(), json=payload)
 
-def append_row(ws, row):
-    ws.append_row(row)
+data, sha = cargar_data()
 
-def update_ws(ws, df):
-    ws.clear()
-    ws.update([df.columns.values.tolist()] + df.values.tolist())
+usuarios = data["usuarios"]
+registros = data["registros"]
+demostraciones = data["demostraciones"]
+notas = data["notas"]
+productos = data["productos"]
+ventas = data["ventas"]
 
-# -------------------- DATA --------------------
-df_usuarios = get_df(ws_usuarios)
-df_contactos = get_df(ws_contactos)
-df_demos = get_df(ws_demos)
-df_notas = get_df(ws_notas)
-df_productos = get_df(ws_productos)
-df_ventas = get_df(ws_ventas)
-
-# -------------------- LOGIN --------------------
+# -------------------- Login --------------------
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
     st.session_state.rol = None
@@ -64,10 +66,9 @@ if st.session_state.usuario is None:
         user = st.text_input("Usuario")
         password = st.text_input("Contraseña", type="password")
         if st.button("Entrar"):
-            fila = df_usuarios[(df_usuarios["usuario"] == user) & (df_usuarios["password"] == password)]
-            if not fila.empty:
+            if user in usuarios and usuarios[user]["password"] == password:
                 st.session_state.usuario = user
-                st.session_state.rol = fila.iloc[0]["rol"]
+                st.session_state.rol = usuarios[user]["rol"]
                 st.rerun()
             else:
                 st.error("Usuario o contraseña incorrectos")
@@ -77,15 +78,14 @@ if st.session_state.usuario is None:
         new_pass = st.text_input("Nueva contraseña", type="password")
         new_rol = st.selectbox("Rol", ["miembro", "lider"])
         if st.button("Crear cuenta"):
-            if new_user in df_usuarios["usuario"].values:
+            if new_user in usuarios:
                 st.warning("Ese usuario ya existe")
             else:
-                append_row(ws_usuarios, [new_user, new_pass, new_rol, ""])
-                st.success("Usuario creado, ahora podés ingresar")
-
+                usuarios[new_user] = {"password": new_pass, "rol": new_rol, "lider": None, "equipo": []}
+                guardar_data(data, sha)
+                st.success("Usuario creado")
     st.stop()
 
-# -------------------- SIDEBAR --------------------
 usuario = st.session_state.usuario
 rol = st.session_state.rol
 
@@ -97,79 +97,41 @@ with st.sidebar:
         st.session_state.rol = None
         st.rerun()
 
-# -------------------- CARGAS --------------------
-st.subheader("🗓 Cargar contactos del día")
+# -------------------- Cargas --------------------
+st.subheader("🗓 Contactos del día")
 fecha = st.date_input("Fecha", value=date.today())
-cantidad = st.number_input("Contactos de hoy", min_value=0, step=1)
+cantidad = st.number_input("Contactos", min_value=0, step=1)
 
 if st.button("Guardar contactos"):
-    append_row(ws_contactos, [usuario, fecha.isoformat(), cantidad])
-    st.success("Contactos guardados")
+    registros.setdefault(usuario, [])
+    registros[usuario].append({"fecha": fecha.isoformat(), "cantidad": cantidad})
+    guardar_data(data, sha)
+    st.success("Guardado")
 
-st.subheader("🎤 Cargar demostraciones del día")
-fecha_demo = st.date_input("Fecha demo", value=date.today(), key="demo")
-cantidad_demo = st.number_input("Demostraciones", min_value=0, step=1)
+st.subheader("🎤 Demostraciones del día")
+cantidad_demo = st.number_input("Demos", min_value=0, step=1)
 
 if st.button("Guardar demos"):
-    append_row(ws_demos, [usuario, fecha_demo.isoformat(), cantidad_demo])
-    st.success("Demostraciones guardadas")
+    demostraciones.setdefault(usuario, [])
+    demostraciones[usuario].append({"fecha": fecha.isoformat(), "cantidad": cantidad_demo})
+    guardar_data(data, sha)
+    st.success("Guardado")
 
-# -------------------- MÉTRICAS --------------------
-st.subheader("📊 Progreso")
-
-mis_contactos = df_contactos[df_contactos["usuario"] == usuario]
-mis_demos = df_demos[df_demos["usuario"] == usuario]
-
-if not mis_contactos.empty or not mis_demos.empty:
-    dfc = mis_contactos.copy()
-    dfd = mis_demos.copy()
-
-    if not dfc.empty:
-        dfc["fecha"] = pd.to_datetime(dfc["fecha"])
-        dfc = dfc.groupby("fecha")["cantidad"].sum().reset_index()
-
-    if not dfd.empty:
-        dfd["fecha"] = pd.to_datetime(dfd["fecha"])
-        dfd = dfd.groupby("fecha")["cantidad"].sum().reset_index()
-
-    df = pd.merge(dfc, dfd, on="fecha", how="outer", suffixes=("_contactos", "_demos")).fillna(0)
-    if not df.empty:
-        st.line_chart(df.set_index("fecha"))
-
-# -------------------- OBJETIVOS --------------------
-def inicio_semana(fecha):
-    return fecha - timedelta(days=fecha.weekday())
-
-ini = inicio_semana(date.today())
-
-contactos_sem = mis_contactos[mis_contactos["fecha"] >= ini.isoformat()]["cantidad"].sum() if not mis_contactos.empty else 0
-demos_sem = mis_demos[mis_demos["fecha"] >= ini.isoformat()]["cantidad"].sum() if not mis_demos.empty else 0
-
-st.subheader("🎯 Objetivo semanal")
-st.progress(min(contactos_sem / OBJ_CONTACTOS_SEMANAL, 1.0))
-st.write(f"Contactos: {contactos_sem} / {OBJ_CONTACTOS_SEMANAL}")
-
-st.progress(min(demos_sem / OBJ_DEMOS_SEMANAL, 1.0))
-st.write(f"Demostraciones: {demos_sem} / {OBJ_DEMOS_SEMANAL}")
-
-# -------------------- PRODUCTOS --------------------
+# -------------------- Ventas de productos --------------------
 st.subheader("🛒 Ventas de productos")
 
-if rol == "lider":
-    nuevo_producto = st.text_input("Nuevo producto")
-    if st.button("Agregar producto"):
-        append_row(ws_productos, [nuevo_producto, 0])
-        st.success("Producto agregado")
+for prod in productos:
+    col1, col2 = st.columns([3,1])
+    col1.write(prod)
+    if col2.button(f"+1 {prod}"):
+        productos[prod] += 1
+        ventas.append({"usuario": usuario, "producto": prod, "fecha": date.today().isoformat()})
+        guardar_data(data, sha)
+        st.success(f"Venta registrada: {prod}")
 
-productos = get_df(ws_productos)
+st.subheader("🏆 Productos más vendidos")
+ranking_prod = sorted(productos.items(), key=lambda x: x[1], reverse=True)
+for p, v in ranking_prod:
+    st.write(f"{p}: {v}")
 
-if not productos.empty:
-    for i, row in productos.iterrows():
-        if st.button(f"➕ Vender {row['producto']}"):
-            append_row(ws_ventas, [usuario, row["producto"], date.today().isoformat()])
-            productos.loc[i, "vendidos"] += 1
-            update_ws(ws_productos, productos)
-            st.success(f"Venta registrada: {row['producto']}")
-
-    st.subheader("🔥 Ranking de productos")
-    st.dataframe(productos.sort_values("vendidos", ascending=False))
+st.info("✅ Datos guardados en GitHub (no se pierden al redeploy)")
