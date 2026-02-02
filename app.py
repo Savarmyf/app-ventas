@@ -109,13 +109,41 @@ if st.button("Guardar contactos"):
     st.success("Guardado")
 
 st.subheader("🎤 Demostraciones del día")
-cantidad_demo = st.number_input("Demos", min_value=0, step=1)
+fecha_demo = st.date_input("Fecha de la demo", value=date.today(), key="fecha_demo")
+cantidad_demo = st.number_input("Cantidad de demostraciones", min_value=0, step=1, key="cantidad_demo")
 
-if st.button("Guardar demos"):
+if st.button("Guardar demostraciones"):
     demostraciones.setdefault(usuario, [])
-    demostraciones[usuario].append({"fecha": fecha.isoformat(), "cantidad": cantidad_demo})
+    demostraciones[usuario].append({
+        "fecha": fecha_demo.isoformat(),
+        "cantidad": cantidad_demo
+    })
     guardar_data(data, sha)
-    st.success("Guardado")
+    st.success("✅ Demostraciones guardadas")
+    # -------------------- Analisis --------------------
+st.subheader("📈 Análisis: Contactos vs Demostraciones")
+
+mis_registros = registros.get(usuario, [])
+mis_demos = demostraciones.get(usuario, [])
+
+df_contactos = pd.DataFrame(mis_registros) if mis_registros else pd.DataFrame(columns=["fecha","cantidad"])
+df_demos = pd.DataFrame(mis_demos) if mis_demos else pd.DataFrame(columns=["fecha","cantidad"])
+
+if not df_contactos.empty:
+    df_contactos["fecha"] = pd.to_datetime(df_contactos["fecha"])
+    df_contactos = df_contactos.groupby("fecha")["cantidad"].sum().reset_index()
+
+if not df_demos.empty:
+    df_demos["fecha"] = pd.to_datetime(df_demos["fecha"])
+    df_demos = df_demos.groupby("fecha")["cantidad"].sum().reset_index()
+
+df = pd.merge(df_contactos, df_demos, on="fecha", how="outer", suffixes=("_contactos", "_demos")).fillna(0)
+
+if not df.empty:
+    st.line_chart(df.set_index("fecha"))
+else:
+    st.info("Todavía no hay datos para mostrar el análisis.")
+
 
 # -------------------- Ventas de productos --------------------
 st.subheader("🛒 Registrar venta de producto")
@@ -145,4 +173,5 @@ st.subheader("🏆 Productos más vendidos")
 ranking_prod = sorted(productos.items(), key=lambda x: x[1], reverse=True)
 for p, v in ranking_prod:
     st.write(f"• {p}: {v}")
+
 
