@@ -29,7 +29,7 @@
   },
   "notas": {},
   "productos": {
-    "Cal Mag D": 0,
+    "Cal Mag D": 1,
     "Doble X": 0,
     "Crema de dia": 0,
     "Daily 45": 0,
@@ -67,5 +67,11 @@
     "Pursue (Desinfectante)": 0,
     "Suavizante": 0
   },
-  "ventas": []
+  "ventas": [
+    {
+      "usuario": "prueba",
+      "producto": "Cal Mag D",
+      "fecha": "2026-02-02"
+    }
+  ]
 }
