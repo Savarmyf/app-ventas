@@ -1,5 +1,12 @@
 {
-  "usuarios": {},
+  "usuarios": {
+    "prueba": {
+      "password": "prueba21",
+      "rol": "lider",
+      "lider": null,
+      "equipo": []
+    }
+  },
   "registros": {},
   "demostraciones": {},
   "notas": {},
@@ -29,7 +36,6 @@
     "Inhibidor de grasas": 0,
     "Acelerador de metabolismo": 0,
     "Comprimido masticable (Chocolate)": 0,
-    "Locion Corporal": 0,
     "Herbal Mix Tea": 0,
     "Aerosol Pre lavado ": 0,
     "Blanqueador": 0,
@@ -37,8 +43,8 @@
     "Dish Drops (Detergente)": 0,
     "Frasco Detergente": 0,
     "Frasco Rociador": 0,
-    "Jabón en polvo 3 kg": 0,
-    "Jabón líquido": 0,
+    "Jab\u00f3n en polvo 3 kg": 0,
+    "Jab\u00f3n l\u00edquido": 0,
     "Loc (Desengrasante)": 0,
     "Pursue (Desinfectante)": 0,
     "Suavizante": 0
