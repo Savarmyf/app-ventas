@@ -1,60 +1,59 @@
 import streamlit as st
-import json
-from datetime import datetime, date, timedelta
 import pandas as pd
-import os
+from datetime import datetime, date, timedelta
+import gspread
+from google.oauth2.service_account import Credentials
 
-# -------------------- Archivos --------------------
-USUARIOS_FILE = "usuarios.json"
-USUARIOS_BACKUP = "usuarios_backup.json"
-REGISTROS_FILE = "registros.json"
-NOTAS_FILE = "notas.json"
-DEMOS_FILE = "demostraciones.json"
-
-GUIA_DRIVE_URL = "https://drive.google.com/file/d/1jq_fpB4g7ADA8bmOpi5Szo_FiTAwqT9V/view"
-
-OBJ_CONTACTOS_SEMANAL = 30
-OBJ_DEMOS_SEMANAL = 5
-
+# -------------------- CONFIG --------------------
 st.set_page_config(page_title="Constancia del Equipo", page_icon="📊", layout="centered")
 st.title("📊 Constancia del Equipo")
 
-# -------------------- Utils --------------------
-def cargar_json(ruta, default):
-    try:
-        with open(ruta, "r") as f:
-            return json.load(f)
-    except:
-        return default
+GUIA_DRIVE_URL = "https://drive.google.com/file/d/1jq_fpB4g7ADA8bmOpi5Szo_FiTAwqT9V/view"
+OBJ_CONTACTOS_SEMANAL = 30
+OBJ_DEMOS_SEMANAL = 5
 
-def guardar_json(ruta, data):
-    with open(ruta, "w") as f:
-        json.dump(data, f, indent=2)
+# -------------------- GOOGLE SHEETS --------------------
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+creds = Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"],
+    scopes=SCOPES
+)
+gc = gspread.authorize(creds)
 
-# -------------------- Usuarios con backup --------------------
-def cargar_usuarios():
-    if os.path.exists(USUARIOS_FILE):
-        return cargar_json(USUARIOS_FILE, {})
-    elif os.path.exists(USUARIOS_BACKUP):
-        return cargar_json(USUARIOS_BACKUP, {})
-    else:
-        return {}
+SPREADSHEET_NAME = "app_ventas_equipo"  # poné este nombre a tu Sheet
+sh = gc.open(SPREADSHEET_NAME)
 
-def guardar_usuarios():
-    guardar_json(USUARIOS_FILE, usuarios)
-    guardar_json(USUARIOS_BACKUP, usuarios)
+ws_usuarios = sh.worksheet("usuarios")
+ws_contactos = sh.worksheet("contactos")
+ws_demos = sh.worksheet("demostraciones")
+ws_notas = sh.worksheet("notas")
+ws_productos = sh.worksheet("productos")
+ws_ventas = sh.worksheet("ventas")
 
-def inicio_semana(fecha):
-    return fecha - timedelta(days=fecha.weekday())
+# -------------------- UTILS --------------------
+def get_df(ws):
+    data = ws.get_all_records()
+    return pd.DataFrame(data)
 
-usuarios = cargar_usuarios()
-registros = cargar_json(REGISTROS_FILE, {})
-notas = cargar_json(NOTAS_FILE, {})
-demostraciones = cargar_json(DEMOS_FILE, {})
+def append_row(ws, row):
+    ws.append_row(row)
 
-# -------------------- Login --------------------
+def update_ws(ws, df):
+    ws.clear()
+    ws.update([df.columns.values.tolist()] + df.values.tolist())
+
+# -------------------- DATA --------------------
+df_usuarios = get_df(ws_usuarios)
+df_contactos = get_df(ws_contactos)
+df_demos = get_df(ws_demos)
+df_notas = get_df(ws_notas)
+df_productos = get_df(ws_productos)
+df_ventas = get_df(ws_ventas)
+
+# -------------------- LOGIN --------------------
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
+    st.session_state.rol = None
 
 if st.session_state.usuario is None:
     st.subheader("🔐 Ingresar / Registrarse")
@@ -65,9 +64,10 @@ if st.session_state.usuario is None:
         user = st.text_input("Usuario")
         password = st.text_input("Contraseña", type="password")
         if st.button("Entrar"):
-            if user in usuarios and usuarios[user]["password"] == password:
+            fila = df_usuarios[(df_usuarios["usuario"] == user) & (df_usuarios["password"] == password)]
+            if not fila.empty:
                 st.session_state.usuario = user
-                st.session_state.rol = usuarios[user]["rol"]
+                st.session_state.rol = fila.iloc[0]["rol"]
                 st.rerun()
             else:
                 st.error("Usuario o contraseña incorrectos")
@@ -77,23 +77,15 @@ if st.session_state.usuario is None:
         new_pass = st.text_input("Nueva contraseña", type="password")
         new_rol = st.selectbox("Rol", ["miembro", "lider"])
         if st.button("Crear cuenta"):
-            if new_user in usuarios:
+            if new_user in df_usuarios["usuario"].values:
                 st.warning("Ese usuario ya existe")
-            elif not new_user or not new_pass:
-                st.warning("Completá usuario y contraseña")
             else:
-                usuarios[new_user] = {
-                    "password": new_pass,
-                    "rol": new_rol,
-                    "equipo": [] if new_rol == "lider" else None,
-                    "solicitudes": [] if new_rol == "lider" else None,
-                    "lider": None if new_rol == "miembro" else None
-                }
-                guardar_usuarios()
+                append_row(ws_usuarios, [new_user, new_pass, new_rol, ""])
                 st.success("Usuario creado, ahora podés ingresar")
+
     st.stop()
 
-# -------------------- App --------------------
+# -------------------- SIDEBAR --------------------
 usuario = st.session_state.usuario
 rol = st.session_state.rol
 
@@ -105,160 +97,79 @@ with st.sidebar:
         st.session_state.rol = None
         st.rerun()
 
-st.divider()
+# -------------------- CARGAS --------------------
+st.subheader("🗓 Cargar contactos del día")
+fecha = st.date_input("Fecha", value=date.today())
+cantidad = st.number_input("Contactos de hoy", min_value=0, step=1)
 
-# -------------------- Gestión de líderes --------------------
-if rol == "miembro":
-    st.subheader("👥 Selección de líder")
-    if not usuarios[usuario]["lider"]:
-        lider_seleccionado = st.selectbox(
-            "Elegí tu líder",
-            [u for u, info in usuarios.items() if info["rol"] == "lider"]
-        )
-        if st.button("Solicitar unirme a líder"):
-            usuarios[usuario]["lider"] = lider_seleccionado
-            usuarios[lider_seleccionado]["solicitudes"].append(usuario)
-            guardar_usuarios()
-            st.success(f"Solicitud enviada a {lider_seleccionado}")
-    else:
-        st.info(f"Esperando aprobación de tu líder: {usuarios[usuario]['lider']}")
+if st.button("Guardar contactos"):
+    append_row(ws_contactos, [usuario, fecha.isoformat(), cantidad])
+    st.success("Contactos guardados")
 
-elif rol == "lider":
-    st.subheader("👑 Gestión de equipo")
-    st.write("Tu equipo actual:")
-    if usuarios[usuario]["equipo"]:
-        for miembro in usuarios[usuario]["equipo"]:
-            st.write(f"- {miembro}: {usuarios[miembro]}")
-    else:
-        st.write("Aún no tenés miembros en tu equipo.")
+st.subheader("🎤 Cargar demostraciones del día")
+fecha_demo = st.date_input("Fecha demo", value=date.today(), key="demo")
+cantidad_demo = st.number_input("Demostraciones", min_value=0, step=1)
 
-    # Aprobar solicitudes
-    if usuarios[usuario]["solicitudes"]:
-        st.write("Solicitudes pendientes:")
-        for sol in usuarios[usuario]["solicitudes"]:
-            col1, col2 = st.columns(2)
-            col1.write(sol)
-            if col2.button(f"Aprobar {sol}"):
-                usuarios[usuario]["equipo"].append(sol)
-                usuarios[sol]["lider"] = usuario
-                usuarios[usuario]["solicitudes"].remove(sol)
-                guardar_usuarios()
-                st.success(f"{sol} ahora es parte de tu equipo")
+if st.button("Guardar demos"):
+    append_row(ws_demos, [usuario, fecha_demo.isoformat(), cantidad_demo])
+    st.success("Demostraciones guardadas")
 
-    # -------------------- Árbol jerárquico --------------------
-    st.subheader("🌳 Tu red ")
-    def mostrar_equipo(usuario, nivel=0):
-        st.write(" " * nivel + f"- {usuario} ({usuarios[usuario]['rol']})")
-        if usuarios[usuario]["rol"] == "lider":
-            for miembro in usuarios[usuario]["equipo"]:
-                mostrar_equipo(miembro, nivel + 1)
-    mostrar_equipo(usuario)
-
-# -------------------- Cargas --------------------
-with st.expander("🗓 Cargar contactos del día", expanded=True):
-    fecha = st.date_input("Fecha", value=date.today(), key="fecha_contactos")
-    cantidad = st.number_input("Contactos de hoy", min_value=0, step=1)
-
-    if st.button("Guardar contactos"):
-        registros.setdefault(usuario, [])
-        fecha_str = fecha.strftime("%Y-%m-%d")
-
-        if any(r["fecha"] == fecha_str for r in registros[usuario]):
-            st.warning("Ya cargaste contactos ese día")
-        else:
-            registros[usuario].append({"fecha": fecha_str, "cantidad": cantidad})
-            guardar_json(REGISTROS_FILE, registros)
-            st.success("Contactos guardados")
-
-with st.expander("🎤 Cargar demostraciones del día"):
-    fecha_demo = st.date_input("Fecha demo", value=date.today(), key="fecha_demo")
-    cantidad_demo = st.number_input("Demostraciones de hoy", min_value=0, step=1)
-
-    if st.button("Guardar demos"):
-        demostraciones.setdefault(usuario, [])
-        fecha_str = fecha_demo.strftime("%Y-%m-%d")
-
-        if any(r["fecha"] == fecha_str for r in demostraciones[usuario]):
-            st.warning("Ya cargaste demos ese día")
-        else:
-            demostraciones[usuario].append({"fecha": fecha_str, "cantidad": cantidad_demo})
-            guardar_json(DEMOS_FILE, demostraciones)
-            st.success("Demostraciones guardadas")
-
-# -------------------- Métricas --------------------
+# -------------------- MÉTRICAS --------------------
 st.subheader("📊 Progreso")
 
-mis_registros = registros.get(usuario, [])
-mis_demos = demostraciones.get(usuario, [])
+mis_contactos = df_contactos[df_contactos["usuario"] == usuario]
+mis_demos = df_demos[df_demos["usuario"] == usuario]
 
-if mis_registros or mis_demos:
-    df_contactos = pd.DataFrame(mis_registros) if mis_registros else pd.DataFrame(columns=["fecha","cantidad"])
-    df_demos = pd.DataFrame(mis_demos) if mis_demos else pd.DataFrame(columns=["fecha","cantidad"])
+if not mis_contactos.empty or not mis_demos.empty:
+    dfc = mis_contactos.copy()
+    dfd = mis_demos.copy()
 
-    if not df_contactos.empty:
-        df_contactos["fecha"] = pd.to_datetime(df_contactos["fecha"])
-        df_contactos = df_contactos.groupby("fecha").sum().reset_index()
+    if not dfc.empty:
+        dfc["fecha"] = pd.to_datetime(dfc["fecha"])
+        dfc = dfc.groupby("fecha")["cantidad"].sum().reset_index()
 
-    if not df_demos.empty:
-        df_demos["fecha"] = pd.to_datetime(df_demos["fecha"])
-        df_demos = df_demos.groupby("fecha").sum().reset_index()
+    if not dfd.empty:
+        dfd["fecha"] = pd.to_datetime(dfd["fecha"])
+        dfd = dfd.groupby("fecha")["cantidad"].sum().reset_index()
 
-    df = pd.merge(df_contactos, df_demos, on="fecha", how="outer", suffixes=("_contactos", "_demos")).fillna(0)
-
+    df = pd.merge(dfc, dfd, on="fecha", how="outer", suffixes=("_contactos", "_demos")).fillna(0)
     if not df.empty:
         st.line_chart(df.set_index("fecha"))
 
-# -------------------- Objetivo semanal --------------------
-hoy = date.today()
-ini = inicio_semana(hoy)
+# -------------------- OBJETIVOS --------------------
+def inicio_semana(fecha):
+    return fecha - timedelta(days=fecha.weekday())
 
-contactos_semana = sum(r["cantidad"] for r in mis_registros if date.fromisoformat(r["fecha"]) >= ini)
-demos_semana = sum(r["cantidad"] for r in mis_demos if date.fromisoformat(r["fecha"]) >= ini)
+ini = inicio_semana(date.today())
+
+contactos_sem = mis_contactos[mis_contactos["fecha"] >= ini.isoformat()]["cantidad"].sum() if not mis_contactos.empty else 0
+demos_sem = mis_demos[mis_demos["fecha"] >= ini.isoformat()]["cantidad"].sum() if not mis_demos.empty else 0
 
 st.subheader("🎯 Objetivo semanal")
+st.progress(min(contactos_sem / OBJ_CONTACTOS_SEMANAL, 1.0))
+st.write(f"Contactos: {contactos_sem} / {OBJ_CONTACTOS_SEMANAL}")
 
-st.progress(min(contactos_semana / OBJ_CONTACTOS_SEMANAL, 1.0))
-st.write(f"Contactos: {contactos_semana} / {OBJ_CONTACTOS_SEMANAL}")
+st.progress(min(demos_sem / OBJ_DEMOS_SEMANAL, 1.0))
+st.write(f"Demostraciones: {demos_sem} / {OBJ_DEMOS_SEMANAL}")
 
-st.progress(min(demos_semana / OBJ_DEMOS_SEMANAL, 1.0))
-st.write(f"Demostraciones: {demos_semana} / {OBJ_DEMOS_SEMANAL}")
+# -------------------- PRODUCTOS --------------------
+st.subheader("🛒 Ventas de productos")
 
-# -------------------- Racha + Medallas --------------------
-st.subheader("🔥 Racha y medallas")
+if rol == "lider":
+    nuevo_producto = st.text_input("Nuevo producto")
+    if st.button("Agregar producto"):
+        append_row(ws_productos, [nuevo_producto, 0])
+        st.success("Producto agregado")
 
-fechas = set()
-for r in mis_registros:
-    fechas.add(date.fromisoformat(r["fecha"]))
-for d in mis_demos:
-    fechas.add(date.fromisoformat(d["fecha"]))
+productos = get_df(ws_productos)
 
-racha = 0
-hoy_tmp = hoy
-while hoy_tmp in fechas:
-    racha += 1
-    hoy_tmp -= timedelta(days=1)
+if not productos.empty:
+    for i, row in productos.iterrows():
+        if st.button(f"➕ Vender {row['producto']}"):
+            append_row(ws_ventas, [usuario, row["producto"], date.today().isoformat()])
+            productos.loc[i, "vendidos"] += 1
+            update_ws(ws_productos, productos)
+            st.success(f"Venta registrada: {row['producto']}")
 
-medalla = "🥉 Bronce" if racha >= 3 else "—"
-medalla = "🥈 Plata" if racha >= 7 else medalla
-medalla = "🥇 Oro" if racha >= 14 else medalla
-medalla = "🏆 Leyenda" if racha >= 30 else medalla
-
-st.write(f"Racha actual: **{racha} días seguidos**")
-st.write(f"Medalla: **{medalla}**")
-
-# -------------------- Notas --------------------
-st.subheader("📝 Notas personales")
-nota_actual = notas.get(usuario, "")
-nota_nueva = st.text_area("Metas, pendientes, ideas", value=nota_actual, height=120)
-
-if st.button("Guardar notas"):
-    notas[usuario] = nota_nueva
-    guardar_json(NOTAS_FILE, notas)
-    st.success("Notas guardadas")
-
-# -------------------- Ranking --------------------
-st.subheader("🏆 Ranking del equipo (contactos totales)")
-ranking = {u: sum(r["cantidad"] for r in regs) for u, regs in registros.items()}
-for user, total in sorted(ranking.items(), key=lambda x: x[1], reverse=True):
-    st.write(f"**{user}**: {total}")
-
+    st.subheader("🔥 Ranking de productos")
+    st.dataframe(productos.sort_values("vendidos", ascending=False))
