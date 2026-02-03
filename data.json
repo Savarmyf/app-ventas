@@ -23,6 +23,12 @@
         "fecha": "2026-02-02",
         "cantidad": 3
       }
+    ],
+    "savar": [
+      {
+        "fecha": "2026-02-02",
+        "cantidad": 9
+      }
     ]
   },
   "demostraciones": {
