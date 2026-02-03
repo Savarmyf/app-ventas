@@ -5,6 +5,12 @@
       "rol": "lider",
       "lider": null,
       "equipo": []
+    },
+    "savar": {
+      "password": "savar12",
+      "rol": "lider",
+      "lider": null,
+      "equipo": []
     }
   },
   "registros": {
