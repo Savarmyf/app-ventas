@@ -138,28 +138,29 @@ else:
     st.write("Todavía no tenés miembros directos.")
 
 # -------------------- Cargas --------------------
-st.subheader("🗓 Contactos del día")
-fecha = st.date_input("Fecha", value=date.today())
-cantidad = st.number_input("Contactos", min_value=0, step=1)
+st.subheader("🗓 Registro del día")
 
-if st.button("Guardar contactos"):
-    registros.setdefault(usuario, [])
-    registros[usuario].append({"fecha": fecha.isoformat(), "cantidad": cantidad})
+fecha = st.date_input("Fecha", value=date.today(), key="fecha_general")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    contactos_hoy = st.number_input("Contactos", min_value=0, step=1, key="contactos_hoy")
+with col2:
+    demos_hoy = st.number_input("Demostraciones", min_value=0, step=1, key="demos_hoy")
+with col3:
+    planes_hoy = st.number_input("Planes dados", min_value=0, step=1, key="planes_hoy")
+
+if st.button("Guardar registro del día"):
+    fecha_str = fecha.isoformat()
+
+    registros.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": contactos_hoy})
+    demostraciones.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": demos_hoy})
+    planes.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": planes_hoy})
+
     guardar_data(data, sha)
-    st.success("Guardado")
+    st.success("✅ Registro del día guardado")
 
-st.subheader("🎤 Demostraciones del día")
-fecha_demo = st.date_input("Fecha de la demo", value=date.today(), key="fecha_demo")
-cantidad_demo = st.number_input("Cantidad de demostraciones", min_value=0, step=1, key="cantidad_demo")
-
-if st.button("Guardar demostraciones"):
-    demostraciones.setdefault(usuario, [])
-    demostraciones[usuario].append({
-        "fecha": fecha_demo.isoformat(),
-        "cantidad": cantidad_demo
-    })
-    guardar_data(data, sha)
-    st.success("✅ Demostraciones guardadas")
     # -------------------- Analisis --------------------
 st.subheader("📈 Análisis: Contactos vs Demostraciones")
 
@@ -230,6 +231,7 @@ def mostrar_red(user, nivel=0):
         mostrar_red(m, nivel + 1)
 
 mostrar_red(usuario)
+
 
 
 
