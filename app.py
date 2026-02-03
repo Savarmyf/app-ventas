@@ -96,6 +96,44 @@ with st.sidebar:
         st.session_state.usuario = None
         st.session_state.rol = None
         st.rerun()
+st.divider()
+st.subheader("🌐 Tu red (upline / downline)")
+
+# Inicializar campos si no existen (para usuarios viejos)
+if "lider" not in usuarios[usuario]:
+    usuarios[usuario]["lider"] = None
+if "miembros" not in usuarios[usuario]:
+    usuarios[usuario]["miembros"] = []
+
+# Elegir líder (upline)
+opciones_lideres = [u for u in usuarios.keys() if u != usuario]
+
+if usuarios[usuario]["lider"] is None and opciones_lideres:
+    lider_elegido = st.selectbox("Elegí tu líder (upline)", ["— seleccionar —"] + opciones_lideres)
+
+    if lider_elegido != "— seleccionar —":
+        if st.button("Confirmar líder"):
+            usuarios[usuario]["lider"] = lider_elegido
+
+            # Agregarme como miembro del líder
+            if "miembros" not in usuarios[lider_elegido]:
+                usuarios[lider_elegido]["miembros"] = []
+            usuarios[lider_elegido]["miembros"].append(usuario)
+
+            guardar_data(data, sha)
+            st.success(f"✅ Ahora tu líder es {lider_elegido}")
+            st.rerun()
+else:
+    st.info(f"Tu líder actual: **{usuarios[usuario]['lider'] or 'Sin líder'}**")
+
+# Mostrar mis miembros directos
+mis_miembros = usuarios[usuario].get("miembros", [])
+if mis_miembros:
+    st.write("👥 Tus miembros directos:")
+    for m in mis_miembros:
+        st.write(f"• {m}")
+else:
+    st.write("Todavía no tenés miembros directos.")
 
 # -------------------- Cargas --------------------
 st.subheader("🗓 Contactos del día")
@@ -179,6 +217,7 @@ if ranking_prod:
         st.write(f"• {p}: {v}")
 else:
     st.info("Todavía no hay ventas registradas.")
+
 
 
 
