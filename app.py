@@ -220,5 +220,14 @@ else:
 
 
 
+st.subheader("🌳 Tu red completa")
+
+def mostrar_red(user, nivel=0):
+    st.write(" " * nivel + f"• {user}")
+    for m in usuarios.get(user, {}).get("miembros", []):
+        mostrar_red(m, nivel + 1)
+
+mostrar_red(usuario)
+
 
 
