@@ -51,6 +51,8 @@ demostraciones = data["demostraciones"]
 notas = data["notas"]
 productos = data["productos"]
 ventas = data["ventas"]
+planes = data.get("planes", {})
+data["planes"] = planes
 
 # -------------------- Login --------------------
 if "usuario" not in st.session_state:
@@ -228,6 +230,7 @@ def mostrar_red(user, nivel=0):
         mostrar_red(m, nivel + 1)
 
 mostrar_red(usuario)
+
 
 
 
