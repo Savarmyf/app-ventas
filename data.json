@@ -10,25 +10,58 @@
       "password": "savar12",
       "rol": "lider",
       "lider": null,
-      "equipo": []
+      "equipo": [],
+      "miembros": []
     }
   },
   "registros": {
     "prueba": [
-      { "fecha": "2026-02-01", "cantidad": 4 },
-      { "fecha": "2026-02-02", "cantidad": 3 }
+      {
+        "fecha": "2026-02-01",
+        "cantidad": 4
+      },
+      {
+        "fecha": "2026-02-02",
+        "cantidad": 3
+      }
     ],
     "savar": [
-      { "fecha": "2026-02-02", "cantidad": 9 }
+      {
+        "fecha": "2026-02-02",
+        "cantidad": 9
+      },
+      {
+        "fecha": "2026-02-03",
+        "cantidad": 0
+      }
     ]
   },
   "demostraciones": {
     "prueba": [
-      { "fecha": "2026-02-02", "cantidad": 1 },
-      { "fecha": "2026-02-01", "cantidad": 2 }
+      {
+        "fecha": "2026-02-02",
+        "cantidad": 1
+      },
+      {
+        "fecha": "2026-02-01",
+        "cantidad": 2
+      }
+    ],
+    "savar": [
+      {
+        "fecha": "2026-02-03",
+        "cantidad": 0
+      }
     ]
   },
-  "planes": {},
+  "planes": {
+    "savar": [
+      {
+        "fecha": "2026-02-03",
+        "cantidad": 1
+      }
+    ]
+  },
   "notas": {},
   "productos": {
     "Cal Mag D": 1,
@@ -63,14 +96,22 @@
     "Dish Drops (Detergente)": 0,
     "Frasco Detergente": 0,
     "Frasco Rociador": 0,
-    "Jabón en polvo 3 kg": 0,
-    "Jabón líquido": 0,
+    "Jab\u00f3n en polvo 3 kg": 0,
+    "Jab\u00f3n l\u00edquido": 0,
     "Loc (Desengrasante)": 0,
     "Pursue (Desinfectante)": 0,
     "Suavizante": 0
   },
   "ventas": [
-    { "usuario": "prueba", "producto": "Cal Mag D", "fecha": "2026-02-02" },
-    { "usuario": "prueba", "producto": "Batido Chocolate", "fecha": "2026-02-02" }
+    {
+      "usuario": "prueba",
+      "producto": "Cal Mag D",
+      "fecha": "2026-02-02"
+    },
+    {
+      "usuario": "prueba",
+      "producto": "Batido Chocolate",
+      "fecha": "2026-02-02"
+    }
   ]
 }
