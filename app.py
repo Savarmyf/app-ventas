@@ -130,116 +130,150 @@ with st.sidebar:
 
 st.divider()
 
-# -------------------- Red en red --------------------
-st.subheader("🌐 Tu red")
+# ================== UI PRO (TABS + DASHBOARD) ==================
+st.title("📊 Constancia del Equipo")
 
-usuarios.setdefault(usuario, {}).setdefault("lider", None)
-usuarios.setdefault(usuario, {}).setdefault("miembros", [])
-
-opciones_lideres = [u for u in usuarios.keys() if u != usuario]
-
-if usuarios[usuario]["lider"] is None and opciones_lideres:
-    lider_elegido = st.selectbox("Elegí tu líder (upline)", ["— seleccionar —"] + opciones_lideres)
-    if lider_elegido != "— seleccionar —" and st.button("Confirmar líder"):
-        usuarios[usuario]["lider"] = lider_elegido
-        usuarios.setdefault(lider_elegido, {}).setdefault("miembros", []).append(usuario)
-        guardar_data(data, sha)
-        st.success(f"Ahora tu líder es {lider_elegido}")
+# Sidebar prolija
+with st.sidebar:
+    st.markdown("## 🧭 Menú")
+    seccion = st.radio(
+        "Ir a:",
+        ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "🌳 Red", "📝 Notas"],
+        label_visibility="collapsed"
+    )
+    st.link_button("📘 Guía técnica", GUIA_DRIVE_URL)
+    if st.button("🚪 Cerrar sesión"):
+        st.session_state.usuario = None
+        st.session_state.rol = None
         st.rerun()
-else:
-    st.info(f"Tu líder actual: {usuarios[usuario]['lider'] or 'Sin líder'}")
 
-mis_miembros = usuarios[usuario].get("miembros", [])
-if mis_miembros:
-    st.write("👥 Tus miembros:")
-    for m in mis_miembros:
-        st.write(f"• {m}")
-else:
-    st.write("Todavía no tenés miembros.")
+# Helpers de métricas del día/semana
+hoy = date.today()
+hoy_str = hoy.isoformat()
+ini_semana = hoy - timedelta(days=hoy.weekday())
 
-# -------------------- Registro del día --------------------
-st.subheader("🗓 Registro del día")
+mis_registros = registros.get(usuario, [])
+mis_demos = demostraciones.get(usuario, [])
+mis_planes = planes.get(usuario, [])
 
-fecha = st.date_input("Fecha", value=date.today())
-c1, c2, c3 = st.columns(3)
+contactos_hoy_total = sum(r["cantidad"] for r in mis_registros if r["fecha"] == hoy_str)
+demos_hoy_total = sum(r["cantidad"] for r in mis_demos if r["fecha"] == hoy_str)
+planes_hoy_total = sum(r["cantidad"] for r in mis_planes if r["fecha"] == hoy_str)
 
-with c1:
-    contactos = st.number_input("Contactos", min_value=0, step=1)
-with c2:
-    demos = st.number_input("Demostraciones", min_value=0, step=1)
-with c3:
-    planes_hoy = st.number_input("Planes dados", min_value=0, step=1)
+contactos_semana = sum(r["cantidad"] for r in mis_registros if date.fromisoformat(r["fecha"]) >= ini_semana)
+demos_semana = sum(r["cantidad"] for r in mis_demos if date.fromisoformat(r["fecha"]) >= ini_semana)
+planes_semana = sum(r["cantidad"] for r in mis_planes if date.fromisoformat(r["fecha"]) >= ini_semana)
 
-if st.button("Guardar registro"):
-    fecha_str = fecha.isoformat()
-    registros.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": contactos})
-    demostraciones.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": demos})
-    planes.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": planes_hoy})
-    guardar_data(data, sha)
-    st.success("Registro guardado")
+# ================== DASHBOARD ==================
+if seccion == "📊 Dashboard":
+    st.subheader("📊 Dashboard")
 
-# -------------------- Análisis --------------------
-st.subheader("📈 Análisis")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("📞 Contactos hoy", contactos_hoy_total)
+    c2.metric("🎤 Demos hoy", demos_hoy_total)
+    c3.metric("📑 Planes hoy", planes_hoy_total)
+    c4.metric("🎯 Objetivo semanal (contactos)", f"{contactos_semana}/{OBJ_CONTACTOS_SEMANAL}")
 
-df_c = pd.DataFrame(registros.get(usuario, []), columns=["fecha", "cantidad"])
-df_d = pd.DataFrame(demostraciones.get(usuario, []), columns=["fecha", "cantidad"])
-df_p = pd.DataFrame(planes.get(usuario, []), columns=["fecha", "cantidad"])
+    # Progreso semanal
+    st.markdown("### 🎯 Progreso semanal")
+    st.progress(min(contactos_semana / OBJ_CONTACTOS_SEMANAL, 1.0))
+    st.caption(f"Contactos: {contactos_semana} / {OBJ_CONTACTOS_SEMANAL}")
 
-if not df_c.empty:
-    df_c["fecha"] = pd.to_datetime(df_c["fecha"])
-    df_c = df_c.groupby("fecha").sum().reset_index()
+    st.progress(min(demos_semana / OBJ_DEMOS_SEMANAL, 1.0))
+    st.caption(f"Demos: {demos_semana} / {OBJ_DEMOS_SEMANAL}")
 
-if not df_d.empty:
-    df_d["fecha"] = pd.to_datetime(df_d["fecha"])
-    df_d = df_d.groupby("fecha").sum().reset_index()
+    # Mensaje motivacional inteligente
+    st.markdown("### 💡 Mensaje para hoy")
+    if contactos_hoy_total == 0:
+        st.warning("🔥 Hoy es un gran día para contactar, ¿ya lo hiciste?")
+    elif demos_hoy_total == 0:
+        st.info("🚀 Buen arranque. ¿Sumamos una demo hoy?")
+    else:
+        st.success("👏 Vas muy bien hoy. Mantené el ritmo.")
 
-if not df_p.empty:
-    df_p["fecha"] = pd.to_datetime(df_p["fecha"])
-    df_p = df_p.groupby("fecha").sum().reset_index()
+# ================== REGISTRO ==================
+elif seccion == "🗓 Registro":
+    st.subheader("🗓 Registro del día")
 
-df = df_c.merge(df_d, on="fecha", how="outer", suffixes=("_contactos", "_demos"))
-df = df.merge(df_p, on="fecha", how="outer").fillna(0)
+    fecha = st.date_input("Fecha", value=date.today(), key="fecha_general")
 
-if not df.empty:
-    st.line_chart(df.set_index("fecha"))
-else:
-    st.info("Todavía no hay datos.")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        contactos_hoy = st.number_input("📞 Contactos", min_value=0, step=1)
+    with col2:
+        demos_hoy = st.number_input("🎤 Demostraciones", min_value=0, step=1)
+    with col3:
+        planes_hoy = st.number_input("📑 Planes dados", min_value=0, step=1)
 
-# -------------------- Ventas --------------------
-st.subheader("🛒 Ventas de productos")
+    if st.button("💾 Guardar registro del día", use_container_width=True):
+        fecha_str = fecha.isoformat()
 
-ranking_prod = [(p, v) for p, v in productos.items() if v > 0]
-ranking_prod.sort(key=lambda x: x[1], reverse=True)
+        registros.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": contactos_hoy})
+        demostraciones.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": demos_hoy})
+        planes.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": planes_hoy})
 
-producto = st.selectbox("Productos vendidos", list(productos.keys()))
-cant = st.number_input("Cantidad", 1, 1)
+        guardar_data(data, sha)
+        st.success("✅ Registro guardado")
 
-if st.button("Registrar venta"):
-    productos[producto] += cant
-    for _ in range(cant):
-        ventas.append({"usuario": usuario, "producto": producto, "fecha": date.today().isoformat()})
-    guardar_data(data, sha)
-    st.success("Venta registrada")
+# ================== VENTAS ==================
+elif seccion == "🛒 Ventas":
+    st.subheader("🛒 Ventas de productos")
 
-st.subheader("🏆 Productos más vendidos")
-if ranking_prod:
-    for p, v in ranking_prod:
-        st.write(f"{p}: {v}")
-else:
-    st.info("Todavía no hay ventas.")
+    lista_productos = list(productos.keys())
+    producto_seleccionado = st.selectbox("Producto", lista_productos)
+    cantidad_vendida = st.number_input("Cantidad", min_value=1, step=1, value=1)
 
-# -------------------- Red completa --------------------
-st.subheader("🌳 Tu red completa")
+    if st.button("➕ Registrar venta", use_container_width=True):
+        productos[producto_seleccionado] += cantidad_vendida
+        for _ in range(cantidad_vendida):
+            ventas.append({
+                "usuario": usuario,
+                "producto": producto_seleccionado,
+                "fecha": date.today().isoformat()
+            })
+        guardar_data(data, sha)
+        st.success("✅ Venta registrada")
 
-def mostrar_red(u, nivel=0):
-    st.write(" " * nivel + f"• {u}")
-    for m in usuarios.get(u, {}).get("miembros", []):
-        mostrar_red(m, nivel + 1)
+    st.markdown("### 🏆 Más vendidos")
+    ranking_prod = [(p, v) for p, v in productos.items() if v > 0]
+    ranking_prod = sorted(ranking_prod, key=lambda x: x[1], reverse=True)
 
-mostrar_red(usuario)
+    if ranking_prod:
+        for p, v in ranking_prod:
+            st.write(f"• **{p}** — {v}")
+    else:
+        st.info("Todavía no hay ventas.")
 
+# ================== RED ==================
+elif seccion == "🌳 Red":
+    st.subheader("🌳 Tu red")
 
+    st.markdown("**Tu líder:**")
+    st.info(usuarios[usuario].get("lider") or "Sin líder")
 
+    st.markdown("**Tus miembros directos:**")
+    mis_miembros = usuarios[usuario].get("miembros", [])
+    if mis_miembros:
+        for m in mis_miembros:
+            st.write(f"• {m}")
+    else:
+        st.caption("Todavía no tenés miembros directos.")
 
+    st.markdown("**Red completa:**")
+    def mostrar_red(user, nivel=0):
+        st.write(" " * nivel + f"• {user}")
+        for m in usuarios.get(user, {}).get("miembros", []):
+            mostrar_red(m, nivel + 1)
 
+    mostrar_red(usuario)
 
+# ================== NOTAS ==================
+elif seccion == "📝 Notas":
+    st.subheader("📝 Notas personales")
+    nota_actual = notas.get(usuario, "")
+    nota_nueva = st.text_area("Metas, pendientes, ideas", value=nota_actual, height=160)
+
+    if st.button("💾 Guardar notas", use_container_width=True):
+        notas[usuario] = nota_nueva
+        guardar_data(data, sha)
+        st.success("✅ Notas guardadas")
