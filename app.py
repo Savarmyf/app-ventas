@@ -58,6 +58,33 @@ data["planes"] = planes
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
     st.session_state.rol = None
+import random
+
+FRASES_MOTIVACIONALES = [
+    "Sos importante. Tu constancia hoy cambia tu futuro. 💪",
+    "La paz no es una opción, es una necesidad. Elegí avanzar hoy.",
+    "Aunque hoy cueste, mañana te lo vas a agradecer.",
+    "No se trata de motivación, se trata de disciplina.",
+    "Un contacto hoy es una oportunidad que ayer no existía.",
+    "No abandones en el día que más necesitás avanzar.",
+    "Paso a paso también es progreso.",
+    "No tenés que hacerlo perfecto, tenés que hacerlo.",
+    "Tu versión de dentro de 6 meses depende de lo que hagas hoy.",
+    "Constancia > ganas. Siempre."
+]
+
+st.subheader("💡 Mensaje para hoy")
+
+hoy_str = date.today().strftime("%Y-%m-%d")
+contactos_hoy = any(r["fecha"] == hoy_str for r in registros.get(usuario, []))
+
+if not contactos_hoy:
+    st.warning("🔥 Hoy es un gran día para contactar, ¿ya lo hiciste?")
+else:
+    st.success("🚀 Bien ahí, ya sumaste contactos hoy. ¿Vamos por una demo?")
+
+frase_del_dia = random.choice(FRASES_MOTIVACIONALES)
+st.info(f"✨ {frase_del_dia}")
 
 if st.session_state.usuario is None:
     st.subheader("🔐 Ingresar / Registrarse")
@@ -233,6 +260,7 @@ def mostrar_red(user, nivel=0):
         mostrar_red(m, nivel + 1)
 
 mostrar_red(usuario)
+
 
 
 
