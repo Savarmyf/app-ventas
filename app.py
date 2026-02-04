@@ -162,28 +162,30 @@ if st.button("Guardar registro del día"):
     st.success("✅ Registro del día guardado")
 
     # -------------------- Analisis --------------------
-st.subheader("📈 Análisis: Contactos vs Demostraciones")
+st.subheader("📈 Análisis: Contactos vs Demostraciones vs Planes")
 
 mis_registros = registros.get(usuario, [])
 mis_demos = demostraciones.get(usuario, [])
+mis_planes = planes.get(usuario, [])
 
 df_contactos = pd.DataFrame(mis_registros) if mis_registros else pd.DataFrame(columns=["fecha","cantidad"])
 df_demos = pd.DataFrame(mis_demos) if mis_demos else pd.DataFrame(columns=["fecha","cantidad"])
+df_planes = pd.DataFrame(mis_planes) if mis_planes else pd.DataFrame(columns=["fecha","cantidad"])
 
-if not df_contactos.empty:
-    df_contactos["fecha"] = pd.to_datetime(df_contactos["fecha"])
-    df_contactos = df_contactos.groupby("fecha")["cantidad"].sum().reset_index()
+for df_tmp in [df_contactos, df_demos, df_planes]:
+    if not df_tmp.empty:
+        df_tmp["fecha"] = pd.to_datetime(df_tmp["fecha"])
+        df_tmp = df_tmp.groupby("fecha")["cantidad"].sum().reset_index()
 
-if not df_demos.empty:
-    df_demos["fecha"] = pd.to_datetime(df_demos["fecha"])
-    df_demos = df_demos.groupby("fecha")["cantidad"].sum().reset_index()
-
-df = pd.merge(df_contactos, df_demos, on="fecha", how="outer", suffixes=("_contactos", "_demos")).fillna(0)
+df = df_contactos.merge(df_demos, on="fecha", how="outer", suffixes=("_contactos", "_demos"))
+df = df.merge(df_planes, on="fecha", how="outer")
+df = df.fillna(0)
 
 if not df.empty:
+    df = df.rename(columns={"cantidad": "planes"})
     st.line_chart(df.set_index("fecha"))
 else:
-    st.info("Todavía no hay datos para mostrar el análisis.")
+    st.info("Todavía no hay datos para el análisis.")
 
 
 # -------------------- Ventas de productos --------------------
@@ -231,6 +233,7 @@ def mostrar_red(user, nivel=0):
         mostrar_red(m, nivel + 1)
 
 mostrar_red(usuario)
+
 
 
 
