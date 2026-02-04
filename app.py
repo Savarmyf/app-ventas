@@ -4,9 +4,10 @@ import json
 from datetime import date, datetime, timedelta
 import pandas as pd
 import base64
+import random
 
 # -------------------- CONFIG --------------------
-GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]  # lo vamos a cargar en Streamlit Cloud
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 OWNER = "Savarmyf"
 REPO = "app-ventas"
 DATA_PATH = "data.json"
@@ -58,33 +59,6 @@ data["planes"] = planes
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
     st.session_state.rol = None
-import random
-
-FRASES_MOTIVACIONALES = [
-    "Sos importante. Tu constancia hoy cambia tu futuro. 💪",
-    "La paz no es una opción, es una necesidad. Elegí avanzar hoy.",
-    "Aunque hoy cueste, mañana te lo vas a agradecer.",
-    "No se trata de motivación, se trata de disciplina.",
-    "Un contacto hoy es una oportunidad que ayer no existía.",
-    "No abandones en el día que más necesitás avanzar.",
-    "Paso a paso también es progreso.",
-    "No tenés que hacerlo perfecto, tenés que hacerlo.",
-    "Tu versión de dentro de 6 meses depende de lo que hagas hoy.",
-    "Constancia > ganas. Siempre."
-]
-
-st.subheader("💡 Mensaje para hoy")
-
-hoy_str = date.today().strftime("%Y-%m-%d")
-contactos_hoy = any(r["fecha"] == hoy_str for r in registros.get(usuario, []))
-
-if not contactos_hoy:
-    st.warning("🔥 Hoy es un gran día para contactar, ¿ya lo hiciste?")
-else:
-    st.success("🚀 Bien ahí, ya sumaste contactos hoy. ¿Vamos por una demo?")
-
-frase_del_dia = random.choice(FRASES_MOTIVACIONALES)
-st.info(f"✨ {frase_del_dia}")
 
 if st.session_state.usuario is None:
     st.subheader("🔐 Ingresar / Registrarse")
@@ -105,162 +79,164 @@ if st.session_state.usuario is None:
     with tab2:
         new_user = st.text_input("Nuevo usuario")
         new_pass = st.text_input("Nueva contraseña", type="password")
-        new_rol = st.selectbox("Rol", ["miembro", "lider"])
         if st.button("Crear cuenta"):
             if new_user in usuarios:
                 st.warning("Ese usuario ya existe")
             else:
-                usuarios[new_user] = {"password": new_pass, "rol": new_rol, "lider": None, "equipo": []}
+                usuarios[new_user] = {"password": new_pass, "rol": "miembro", "lider": None, "miembros": []}
                 guardar_data(data, sha)
-                st.success("Usuario creado")
+                st.success("Usuario creado, ahora podés ingresar")
+
     st.stop()
 
 usuario = st.session_state.usuario
-rol = st.session_state.rol
+rol = usuarios[usuario]["rol"]
 
+# -------------------- Mensaje motivacional --------------------
+st.subheader("💡 Mensaje para hoy")
+
+FRASES_MOTIVACIONALES = [
+    "Sos importante. Tu constancia hoy cambia tu futuro. 💪",
+    "La paz no es una opción, es una necesidad. Elegí avanzar hoy.",
+    "Aunque hoy cueste, mañana te lo vas a agradecer.",
+    "No se trata de motivación, se trata de disciplina.",
+    "Un contacto hoy es una oportunidad que ayer no existía.",
+    "No abandones en el día que más necesitás avanzar.",
+    "Paso a paso también es progreso.",
+    "No tenés que hacerlo perfecto, tenés que hacerlo.",
+    "Tu versión de dentro de 6 meses depende de lo que hagas hoy.",
+    "Constancia > ganas. Siempre."
+]
+
+hoy_str = date.today().strftime("%Y-%m-%d")
+mis_contactos = registros.get(usuario, [])
+contactos_hoy = any(r["fecha"] == hoy_str for r in mis_contactos)
+
+if not contactos_hoy:
+    st.warning("🔥 Hoy es un gran día para contactar, ¿ya lo hiciste?")
+else:
+    st.success("🚀 Bien ahí, ya sumaste contactos hoy. ¿Vamos por una demo o un plan?")
+
+st.info(f"✨ {random.choice(FRASES_MOTIVACIONALES)}")
+
+# -------------------- Sidebar --------------------
 with st.sidebar:
-    st.success(f"👋 {usuario} ({rol})")
+    st.success(f"👋 {usuario}")
     st.link_button("📘 Guía técnica", GUIA_DRIVE_URL)
     if st.button("🚪 Cerrar sesión"):
         st.session_state.usuario = None
         st.session_state.rol = None
         st.rerun()
+
 st.divider()
-st.subheader("🌐 Tu red (upline / downline)")
 
-# Inicializar campos si no existen (para usuarios viejos)
-if "lider" not in usuarios[usuario]:
-    usuarios[usuario]["lider"] = None
-if "miembros" not in usuarios[usuario]:
-    usuarios[usuario]["miembros"] = []
+# -------------------- Red en red --------------------
+st.subheader("🌐 Tu red")
 
-# Elegir líder (upline)
+usuarios.setdefault(usuario, {}).setdefault("lider", None)
+usuarios.setdefault(usuario, {}).setdefault("miembros", [])
+
 opciones_lideres = [u for u in usuarios.keys() if u != usuario]
 
 if usuarios[usuario]["lider"] is None and opciones_lideres:
     lider_elegido = st.selectbox("Elegí tu líder (upline)", ["— seleccionar —"] + opciones_lideres)
-
-    if lider_elegido != "— seleccionar —":
-        if st.button("Confirmar líder"):
-            usuarios[usuario]["lider"] = lider_elegido
-
-            # Agregarme como miembro del líder
-            if "miembros" not in usuarios[lider_elegido]:
-                usuarios[lider_elegido]["miembros"] = []
-            usuarios[lider_elegido]["miembros"].append(usuario)
-
-            guardar_data(data, sha)
-            st.success(f"✅ Ahora tu líder es {lider_elegido}")
-            st.rerun()
+    if lider_elegido != "— seleccionar —" and st.button("Confirmar líder"):
+        usuarios[usuario]["lider"] = lider_elegido
+        usuarios.setdefault(lider_elegido, {}).setdefault("miembros", []).append(usuario)
+        guardar_data(data, sha)
+        st.success(f"Ahora tu líder es {lider_elegido}")
+        st.rerun()
 else:
-    st.info(f"Tu líder actual: **{usuarios[usuario]['lider'] or 'Sin líder'}**")
+    st.info(f"Tu líder actual: {usuarios[usuario]['lider'] or 'Sin líder'}")
 
-# Mostrar mis miembros directos
 mis_miembros = usuarios[usuario].get("miembros", [])
 if mis_miembros:
-    st.write("👥 Tus miembros directos:")
+    st.write("👥 Tus miembros:")
     for m in mis_miembros:
         st.write(f"• {m}")
 else:
-    st.write("Todavía no tenés miembros directos.")
+    st.write("Todavía no tenés miembros.")
 
-# -------------------- Cargas --------------------
+# -------------------- Registro del día --------------------
 st.subheader("🗓 Registro del día")
 
-fecha = st.date_input("Fecha", value=date.today(), key="fecha_general")
+fecha = st.date_input("Fecha", value=date.today())
+c1, c2, c3 = st.columns(3)
 
-col1, col2, col3 = st.columns(3)
+with c1:
+    contactos = st.number_input("Contactos", min_value=0, step=1)
+with c2:
+    demos = st.number_input("Demostraciones", min_value=0, step=1)
+with c3:
+    planes_hoy = st.number_input("Planes dados", min_value=0, step=1)
 
-with col1:
-    contactos_hoy = st.number_input("Contactos", min_value=0, step=1, key="contactos_hoy")
-with col2:
-    demos_hoy = st.number_input("Demostraciones", min_value=0, step=1, key="demos_hoy")
-with col3:
-    planes_hoy = st.number_input("Planes dados", min_value=0, step=1, key="planes_hoy")
-
-if st.button("Guardar registro del día"):
+if st.button("Guardar registro"):
     fecha_str = fecha.isoformat()
-
-    registros.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": contactos_hoy})
-    demostraciones.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": demos_hoy})
+    registros.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": contactos})
+    demostraciones.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": demos})
     planes.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": planes_hoy})
-
     guardar_data(data, sha)
-    st.success("✅ Registro del día guardado")
+    st.success("Registro guardado")
 
-    # -------------------- Analisis --------------------
-st.subheader("📈 Análisis: Contactos vs Demostraciones vs Planes")
+# -------------------- Análisis --------------------
+st.subheader("📈 Análisis")
 
-mis_registros = registros.get(usuario, [])
-mis_demos = demostraciones.get(usuario, [])
-mis_planes = planes.get(usuario, [])
+df_c = pd.DataFrame(registros.get(usuario, []), columns=["fecha", "cantidad"])
+df_d = pd.DataFrame(demostraciones.get(usuario, []), columns=["fecha", "cantidad"])
+df_p = pd.DataFrame(planes.get(usuario, []), columns=["fecha", "cantidad"])
 
-df_contactos = pd.DataFrame(mis_registros) if mis_registros else pd.DataFrame(columns=["fecha","cantidad"])
-df_demos = pd.DataFrame(mis_demos) if mis_demos else pd.DataFrame(columns=["fecha","cantidad"])
-df_planes = pd.DataFrame(mis_planes) if mis_planes else pd.DataFrame(columns=["fecha","cantidad"])
+if not df_c.empty:
+    df_c["fecha"] = pd.to_datetime(df_c["fecha"])
+    df_c = df_c.groupby("fecha").sum().reset_index()
 
-for df_tmp in [df_contactos, df_demos, df_planes]:
-    if not df_tmp.empty:
-        df_tmp["fecha"] = pd.to_datetime(df_tmp["fecha"])
-        df_tmp = df_tmp.groupby("fecha")["cantidad"].sum().reset_index()
+if not df_d.empty:
+    df_d["fecha"] = pd.to_datetime(df_d["fecha"])
+    df_d = df_d.groupby("fecha").sum().reset_index()
 
-df = df_contactos.merge(df_demos, on="fecha", how="outer", suffixes=("_contactos", "_demos"))
-df = df.merge(df_planes, on="fecha", how="outer")
-df = df.fillna(0)
+if not df_p.empty:
+    df_p["fecha"] = pd.to_datetime(df_p["fecha"])
+    df_p = df_p.groupby("fecha").sum().reset_index()
+
+df = df_c.merge(df_d, on="fecha", how="outer", suffixes=("_contactos", "_demos"))
+df = df.merge(df_p, on="fecha", how="outer").fillna(0)
 
 if not df.empty:
-    df = df.rename(columns={"cantidad": "planes"})
     st.line_chart(df.set_index("fecha"))
 else:
-    st.info("Todavía no hay datos para el análisis.")
+    st.info("Todavía no hay datos.")
 
-
-# -------------------- Ventas de productos --------------------
-st.subheader("🛒 Registrar venta de producto")
-
-lista_productos = list(productos.keys())
-
-if lista_productos:
-    producto_seleccionado = st.selectbox("Productos vendidos:", lista_productos)
-    cantidad_vendida = st.number_input("Cantidad", min_value=1, step=1, value=1)
-
-    if st.button("Registrar venta"):
-        productos[producto_seleccionado] += cantidad_vendida
-
-        for _ in range(cantidad_vendida):
-            ventas.append({
-                "usuario": usuario,
-                "producto": producto_seleccionado,
-                "fecha": date.today().isoformat()
-            })
-
-        guardar_data(data, sha)
-        st.success(f"✅ Venta registrada: {producto_seleccionado} x{cantidad_vendida}")
-else:
-    st.info("Todavía no hay productos cargados.")
-
-st.subheader("🏆 Productos más vendidos")
+# -------------------- Ventas --------------------
+st.subheader("🛒 Ventas de productos")
 
 ranking_prod = [(p, v) for p, v in productos.items() if v > 0]
-ranking_prod = sorted(ranking_prod, key=lambda x: x[1], reverse=True)
+ranking_prod.sort(key=lambda x: x[1], reverse=True)
 
+producto = st.selectbox("Productos vendidos", list(productos.keys()))
+cant = st.number_input("Cantidad", 1, 1)
+
+if st.button("Registrar venta"):
+    productos[producto] += cant
+    for _ in range(cant):
+        ventas.append({"usuario": usuario, "producto": producto, "fecha": date.today().isoformat()})
+    guardar_data(data, sha)
+    st.success("Venta registrada")
+
+st.subheader("🏆 Productos más vendidos")
 if ranking_prod:
     for p, v in ranking_prod:
-        st.write(f"• {p}: {v}")
+        st.write(f"{p}: {v}")
 else:
-    st.info("Todavía no hay ventas registradas.")
+    st.info("Todavía no hay ventas.")
 
-
-
+# -------------------- Red completa --------------------
 st.subheader("🌳 Tu red completa")
 
-def mostrar_red(user, nivel=0):
-    st.write(" " * nivel + f"• {user}")
-    for m in usuarios.get(user, {}).get("miembros", []):
+def mostrar_red(u, nivel=0):
+    st.write(" " * nivel + f"• {u}")
+    for m in usuarios.get(u, {}).get("miembros", []):
         mostrar_red(m, nivel + 1)
 
 mostrar_red(usuario)
-
 
 
 
