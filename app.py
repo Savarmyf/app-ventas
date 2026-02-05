@@ -137,19 +137,20 @@ with st.sidebar:
 
 st.divider()
 
-# ================== UI PRO (TABS + DASHBOARD) ==================
+# ================== UI PRO (SIDEBAR + SECCIONES) ==================
 st.title("📊 Constancia del Equipo")
 
-# Sidebar prolija
 with st.sidebar:
     st.markdown("## 🧭 Menú")
-seccion = st.radio(
-    "Ir a:",
-    ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "🌳 Red", "📝 Notas"],
-    label_visibility="collapsed"
+
+    seccion = st.radio(
+        "Ir a:",
+        ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "🌳 Red", "📝 Notas"],
+        label_visibility="collapsed"
     )
 
     st.link_button("📘 Guía técnica", GUIA_DRIVE_URL)
+
     if st.button("🚪 Cerrar sesión"):
         st.session_state.usuario = None
         st.session_state.rol = None
@@ -354,5 +355,6 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("Notas guardadas")
+
 
 
