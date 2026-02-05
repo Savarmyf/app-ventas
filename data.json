@@ -64,6 +64,11 @@
   },
   "notas": {},
   "productos": {
+    "Doble X": {
+      "vendidos": 0,
+      "costo": 84690.0,
+      "precio": 114742.0
+    }
   },
   "ventas": [
     {
@@ -84,6 +89,10 @@
   ],
   "tareas": {},
   "agenda": {},
-  "costos": {},
-  "ingresos": {}
+  "costos": {
+    "savar": []
+  },
+  "ingresos": {
+    "savar": []
+  }
 }
