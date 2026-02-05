@@ -300,6 +300,7 @@ elif seccion == "🛒 Ventas":
             st.write(f"• **{p}** — {v}")
     else:
         st.info("Todavía no hay ventas.")
+        
 st.markdown("## 💰 Balance de dinero")
 
 # Inicializar si no existen
@@ -372,7 +373,7 @@ if ingresos[usuario]:
     st.dataframe(df_ingresos.sort_values("fecha", ascending=False), use_container_width=True)
 else:
     st.caption("Todavía no registraste ingresos.")
-
+# --------- Historial ---------
 
 elif seccion == "🌳 Red":
     st.subheader("🌳 Tu red")
@@ -391,5 +392,6 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("✅ Notas guardadas")
+
 
 
