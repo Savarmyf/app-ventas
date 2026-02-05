@@ -108,8 +108,18 @@ hoy_str = date.today().isoformat()
 registros_user = registros.get(usuario, [])
 demos_user = demostraciones.get(usuario, [])
 
-hoy_contactos = any(r["fecha"] == hoy_str and r["cantidad"] > 0 for r in registros_user)
-hoy_demos = any(d["fecha"] == hoy_str and d["cantidad"] > 0 for d in demos_user)
+hoy_contactos = any(
+    r.get("fecha") == hoy_str and r.get("cantidad", 0) > 0
+    for r in registros_user
+    if isinstance(r, dict)
+)
+
+hoy_demos = any(
+    d.get("fecha") == hoy_str and d.get("cantidad", 0) > 0
+    for d in demos_user
+    if isinstance(d, dict)
+)
+
 
 if not hoy_contactos:
     st.warning("🔥 Hoy todavía no sumaste contactos. 1 acción ahora cambia el día.")
@@ -382,6 +392,7 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("Notas guardadas")
+
 
 
 
