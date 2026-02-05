@@ -169,8 +169,8 @@ planes_semana = sum(r["cantidad"] for r in mis_planes if date.fromisoformat(r["f
 
 # ================== DASHBOARD ==================
 if seccion == "📊 Dashboard":
-    st.subheader("📊 Dashboard")
-
+    st.header("📊 Dashboard")
+    
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("📞 Contactos hoy", contactos_hoy_total)
     c2.metric("🎤 Demos hoy", demos_hoy_total)
@@ -336,6 +336,7 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("✅ Notas guardadas")
+
 
 
 
