@@ -270,53 +270,68 @@ elif seccion == "🗓 Registro":
 
 
 elif seccion == "🛒 Ventas":
-    st.subheader("🛒 Ventas de productos")
+    st.header("🛒 Registrar venta")
 
     lista_productos = list(productos.keys())
-    producto_seleccionado = st.selectbox("Producto", lista_productos)
-    cantidad_vendida = st.number_input("Cantidad", min_value=1, step=1, value=1)
 
-    if st.button("➕ Registrar venta", use_container_width=True):
-        productos[producto_seleccionado] += cantidad_vendida
-        for _ in range(cantidad_vendida):
-            ventas.append({
-                "usuario": usuario,
-                "producto": producto_seleccionado,
-                "fecha": date.today().isoformat()
-            })
-        guardar_data(data, sha)
-        st.success("✅ Venta registrada")
-
-    st.markdown("### 🏆 Más vendidos")
-    ranking_prod = [(p, v) for p, v in productos.items() if v > 0]
-    ranking_prod = sorted(ranking_prod, key=lambda x: x[1], reverse=True)
-
-    if ranking_prod:
-        for p, v in ranking_prod:
-            st.write(f"• **{p}** — {v}")
+    if not lista_productos:
+        st.info("Primero cargá productos en la sección 💰 Balance")
     else:
-        st.info("Todavía no hay ventas.")
+        producto_seleccionado = st.selectbox("Producto", lista_productos)
+        cantidad_vendida = st.number_input("Cantidad", min_value=1, step=1, value=1)
+
+        prod = productos[producto_seleccionado]
+        precio = prod["precio"]
+        costo = prod["costo"]
+        ganancia = precio - costo
+
+        st.info(f"💰 Ganancia por unidad: ${ganancia:,.0f}")
+
+        if st.button("➕ Registrar venta", use_container_width=True):
+            productos[producto_seleccionado]["vendidos"] += cantidad_vendida
+
+            for _ in range(cantidad_vendida):
+                ingresos.setdefault(usuario, []).append({
+                    "fecha": date.today().isoformat(),
+                    "producto": producto_seleccionado,
+                    "precio_venta": precio,
+                    "costo": costo,
+                    "ganancia": ganancia
+                })
+
+            guardar_data(data, sha)
+            st.success("✅ Venta registrada")
 
 
 elif seccion == "💰 Balance":
-    st.header("💰 Balance de dinero")
+    st.header("💰 Balance financiero")
 
-    costos.setdefault(usuario, [])
-    ingresos.setdefault(usuario, [])
+# Inicializar estructuras
+costos = data.get("costos", {})
+ingresos = data.get("ingresos", {})
+data["costos"] = costos
+data["ingresos"] = ingresos
 
-    with st.expander("➕ Registrar costo"):
-        fecha_costo = st.date_input("Fecha del costo", value=date.today(), key="fecha_costo")
-        concepto = st.text_input("Concepto")
-        monto_costo = st.number_input("Monto", min_value=0.0, step=500.0)
+costos.setdefault(usuario, [])
+ingresos.setdefault(usuario, [])
 
-        if st.button("Guardar costo"):
-            costos[usuario].append({
-                "fecha": fecha_costo.isoformat(),
-                "concepto": concepto,
-                "monto": float(monto_costo)
-            })
-            guardar_data(data, sha)
-            st.success("Costo registrado")
+# ---------- Alta de productos ----------
+st.subheader("📦 Productos (costos y precios)")
+
+with st.expander("➕ Agregar / editar producto"):
+    nombre_prod = st.text_input("Nombre del producto")
+    costo_prod = st.number_input("Costo del producto", min_value=0.0, step=500.0)
+    precio_prod = st.number_input("Precio de venta", min_value=0.0, step=500.0)
+
+    if st.button("Guardar producto"):
+        productos[nombre_prod] = {
+            "vendidos": productos.get(nombre_prod, {}).get("vendidos", 0),
+            "costo": float(costo_prod),
+            "precio": float(precio_prod)
+        }
+        guardar_data(data, sha)
+        st.success("✅ Producto guardado")
+
 
     with st.expander("➕ Registrar ingreso"):
         producto_ingreso = st.selectbox("Producto", list(productos.keys()))
@@ -337,6 +352,34 @@ elif seccion == "💰 Balance":
             })
             guardar_data(data, sha)
             st.success("Ingreso registrado")
+st.subheader("📊 Resumen financiero")
+
+total_costos = sum(c["monto"] for c in costos[usuario]) if costos[usuario] else 0
+total_ingresos = sum(i["precio_venta"] for i in ingresos[usuario]) if ingresos[usuario] else 0
+total_ganancia = sum(i["ganancia"] for i in ingresos[usuario]) if ingresos[usuario] else 0
+balance = total_ganancia - total_costos
+
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("💵 Costos", f"${total_costos:,.0f}")
+c2.metric("💸 Ingresos", f"${total_ingresos:,.0f}")
+c3.metric("📈 Ganancia", f"${total_ganancia:,.0f}")
+c4.metric("🧮 Balance neto", f"${balance:,.0f}")
+
+st.markdown("### 🧾 Ventas registradas")
+if ingresos[usuario]:
+    df_ingresos = pd.DataFrame(ingresos[usuario])
+    df_ingresos["fecha"] = pd.to_datetime(df_ingresos["fecha"])
+    st.dataframe(df_ingresos.sort_values("fecha", ascending=False), use_container_width=True)
+else:
+    st.caption("Todavía no hay ventas registradas.")
+
+st.markdown("### 🧾 Costos registrados")
+if costos[usuario]:
+    df_costos = pd.DataFrame(costos[usuario])
+    df_costos["fecha"] = pd.to_datetime(df_costos["fecha"])
+    st.dataframe(df_costos.sort_values("fecha", ascending=False), use_container_width=True)
+else:
+    st.caption("Todavía no hay costos registrados.")
 
 
 elif seccion == "🌳 Red":
@@ -355,6 +398,7 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("Notas guardadas")
+
 
 
 
