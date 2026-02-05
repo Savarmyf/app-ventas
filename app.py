@@ -249,8 +249,10 @@ for i, e in enumerate(sorted(agenda[usuario], key=lambda x: x["fecha"])):
         col3.write("✅")
 
 # ================== REGISTRO ==================
+st.write("Bienvenido a tu panel principal")
+
 elif seccion == "🗓 Registro":
-    st.subheader("🗓 Registro del día")
+    st.header("🗓 Registro del día")
 
     fecha = st.date_input("Fecha", value=date.today(), key="fecha_general")
 
@@ -334,6 +336,7 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("✅ Notas guardadas")
+
 
 
 
