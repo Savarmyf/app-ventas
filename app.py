@@ -116,8 +116,13 @@ if not contactos_hoy:
     st.warning("🔥 Hoy es un gran día para contactar, ¿ya lo hiciste?")
 else:
     st.success("🚀 Bien ahí, ya sumaste contactos hoy. ¿Vamos por una demo o un plan?")
-
+    elif demos_hoy_total == 0:
+        st.info("🚀 Buen arranque. ¿Sumamos una demo hoy?")
+    else:
+        st.success("👏 Vas muy bien hoy. Mantené el ritmo.")
 st.info(f"✨ {random.choice(FRASES_MOTIVACIONALES)}")
+
+
 
 # -------------------- Sidebar --------------------
 with st.sidebar:
@@ -265,6 +270,7 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("✅ Notas guardadas")
+
 
 
 
