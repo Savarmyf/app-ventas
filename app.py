@@ -143,10 +143,11 @@ st.title("📊 Constancia del Equipo")
 # Sidebar prolija
 with st.sidebar:
     st.markdown("## 🧭 Menú")
-    seccion = st.radio(
-        "Ir a:",
-        ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "🌳 Red", "📝 Notas"],
-        label_visibility="collapsed"
+seccion = st.radio(
+    "Ir a:",
+    ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "🌳 Red", "📝 Notas"],
+    label_visibility="collapsed"
+
     )
     st.link_button("📘 Guía técnica", GUIA_DRIVE_URL)
     if st.button("🚪 Cerrar sesión"):
@@ -353,3 +354,4 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("Notas guardadas")
+
