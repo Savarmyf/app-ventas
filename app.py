@@ -272,12 +272,10 @@ elif seccion == "🗓 Registro":
 elif seccion == "🛒 Ventas":
     st.header("🛒 Registrar venta")
 
-    lista_productos = list(productos.keys())
-
-    if not lista_productos:
-        st.info("Primero cargá productos en la sección 💰 Balance")
+    if not productos:
+        st.info("Primero cargá productos con costo y precio en 💰 Balance")
     else:
-        producto_seleccionado = st.selectbox("Producto", lista_productos)
+        producto_seleccionado = st.selectbox("Producto", list(productos.keys()))
         cantidad_vendida = st.number_input("Cantidad", min_value=1, step=1, value=1)
 
         prod = productos[producto_seleccionado]
@@ -290,8 +288,10 @@ elif seccion == "🛒 Ventas":
         if st.button("➕ Registrar venta", use_container_width=True):
             productos[producto_seleccionado]["vendidos"] += cantidad_vendida
 
+            ingresos.setdefault(usuario, [])
+
             for _ in range(cantidad_vendida):
-                ingresos.setdefault(usuario, []).append({
+                ingresos[usuario].append({
                     "fecha": date.today().isoformat(),
                     "producto": producto_seleccionado,
                     "precio_venta": precio,
@@ -301,6 +301,7 @@ elif seccion == "🛒 Ventas":
 
             guardar_data(data, sha)
             st.success("✅ Venta registrada")
+
 
 
 elif seccion == "💰 Balance":
@@ -379,6 +380,7 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("Notas guardadas")
+
 
 
 
