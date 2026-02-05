@@ -177,79 +177,75 @@ if seccion == "📊 Dashboard":
     c3.metric("📑 Planes hoy", planes_hoy_total)
     c4.metric("🎯 Objetivo semanal (contactos)", f"{contactos_semana}/{OBJ_CONTACTOS_SEMANAL}")
 
-    # Progreso semanal
     st.markdown("### 🎯 Progreso semanal")
     st.progress(min(contactos_semana / OBJ_CONTACTOS_SEMANAL, 1.0))
     st.caption(f"Contactos: {contactos_semana} / {OBJ_CONTACTOS_SEMANAL}")
 
     st.progress(min(demos_semana / OBJ_DEMOS_SEMANAL, 1.0))
     st.caption(f"Demos: {demos_semana} / {OBJ_DEMOS_SEMANAL}")
-# ====================== Tareas =================
-st.subheader("✅ Tareas del día")
 
-tareas.setdefault(usuario, [])
+    # ====================== Tareas =================
+    st.subheader("✅ Tareas del día")
 
-with st.expander("➕ Agregar tarea"):
-    desc = st.text_input("Descripción (ej: Llamar a Juan)")
-    fecha_limite = st.date_input("Fecha límite", value=date.today())
-    if st.button("Agregar tarea"):
-        tareas[usuario].append({
-            "desc": desc,
-            "fecha": fecha_limite.isoformat(),
-            "hecha": False
-        })
-        guardar_data(data, sha)
-        st.success("Tarea agregada")
+    tareas.setdefault(usuario, [])
 
-st.write("📋 Tus tareas:")
-for i, t in enumerate(tareas[usuario]):
-    col1, col2, col3 = st.columns([4, 2, 1])
-    col1.write(f"• {t['desc']}")
-    col2.write(f"📅 {t['fecha']}")
-    if not t["hecha"]:
-        if col3.button("✔️", key=f"tarea_{i}"):
-            tareas[usuario][i]["hecha"] = True
+    with st.expander("➕ Agregar tarea"):
+        desc = st.text_input("Descripción (ej: Llamar a Juan)")
+        fecha_limite = st.date_input("Fecha límite", value=date.today())
+        if st.button("Agregar tarea"):
+            tareas[usuario].append({
+                "desc": desc,
+                "fecha": fecha_limite.isoformat(),
+                "hecha": False
+            })
             guardar_data(data, sha)
-            st.rerun()
-    else:
-        col3.write("✅")
+            st.success("Tarea agregada")
 
+    st.write("📋 Tus tareas:")
+    for i, t in enumerate(tareas[usuario]):
+        col1, col2, col3 = st.columns([4, 2, 1])
+        col1.write(f"• {t['desc']}")
+        col2.write(f"📅 {t['fecha']}")
+        if not t["hecha"]:
+            if col3.button("✔️", key=f"tarea_{i}"):
+                tareas[usuario][i]["hecha"] = True
+                guardar_data(data, sha)
+                st.rerun()
+        else:
+            col3.write("✅")
 
-# =============== Agenda ====================
-st.subheader("📅 Agenda (reuniones, demos, seguimientos)")
+    # =============== Agenda ====================
+    st.subheader("📅 Agenda")
 
-agenda.setdefault(usuario, [])
+    agenda.setdefault(usuario, [])
 
-with st.expander("➕ Agendar evento"):
-    tipo = st.selectbox("Tipo", ["Demo", "Reunión", "Seguimiento"])
-    titulo = st.text_input("Título (ej: Demo con Juan)")
-    fecha_evento = st.date_input("Fecha del evento", value=date.today())
+    with st.expander("➕ Agendar evento"):
+        tipo = st.selectbox("Tipo", ["Demo", "Reunión", "Seguimiento"])
+        titulo = st.text_input("Título (ej: Demo con Juan)")
+        fecha_evento = st.date_input("Fecha del evento", value=date.today())
 
-    if st.button("Agendar"):
-        agenda[usuario].append({
-            "tipo": tipo,
-            "titulo": titulo,
-            "fecha": fecha_evento.isoformat(),
-            "hecho": False
-        })
-        guardar_data(data, sha)
-        st.success("Evento agendado")
-
-st.write("🗓 Próximos eventos:")
-for i, e in enumerate(sorted(agenda[usuario], key=lambda x: x["fecha"])):
-    col1, col2, col3 = st.columns([4, 2, 1])
-    col1.write(f"• [{e['tipo']}] {e['titulo']}")
-    col2.write(f"📅 {e['fecha']}")
-    if not e["hecho"]:
-        if col3.button("✔️ Hecho", key=f"agenda_{i}"):
-            agenda[usuario][i]["hecho"] = True
+        if st.button("Agendar"):
+            agenda[usuario].append({
+                "tipo": tipo,
+                "titulo": titulo,
+                "fecha": fecha_evento.isoformat(),
+                "hecho": False
+            })
             guardar_data(data, sha)
-            st.rerun()
-    else:
-        col3.write("✅")
+            st.success("Evento agendado")
 
-# ================== REGISTRO ==================
-st.write("Bienvenido a tu panel principal")
+    for i, e in enumerate(sorted(agenda[usuario], key=lambda x: x["fecha"])):
+        col1, col2, col3 = st.columns([4, 2, 1])
+        col1.write(f"• [{e['tipo']}] {e['titulo']}")
+        col2.write(f"📅 {e['fecha']}")
+        if not e["hecho"]:
+            if col3.button("✔️ Hecho", key=f"agenda_{i}"):
+                agenda[usuario][i]["hecho"] = True
+                guardar_data(data, sha)
+                st.rerun()
+        else:
+            col3.write("✅")
+
 
 elif seccion == "🗓 Registro":
     st.header("🗓 Registro del día")
@@ -266,15 +262,13 @@ elif seccion == "🗓 Registro":
 
     if st.button("💾 Guardar registro del día", use_container_width=True):
         fecha_str = fecha.isoformat()
-
         registros.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": contactos_hoy})
         demostraciones.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": demos_hoy})
         planes.setdefault(usuario, []).append({"fecha": fecha_str, "cantidad": planes_hoy})
-
         guardar_data(data, sha)
         st.success("✅ Registro guardado")
 
-# ================== VENTAS ==================
+
 elif seccion == "🛒 Ventas":
     st.subheader("🛒 Ventas de productos")
 
@@ -303,30 +297,15 @@ elif seccion == "🛒 Ventas":
     else:
         st.info("Todavía no hay ventas.")
 
-# ================== RED ==================
+
 elif seccion == "🌳 Red":
     st.subheader("🌳 Tu red")
+    st.info(f"Tu líder: {usuarios[usuario].get('lider') or 'Sin líder'}")
+    st.write("Miembros directos:")
+    for m in usuarios[usuario].get("miembros", []):
+        st.write(f"• {m}")
 
-    st.markdown("**Tu líder:**")
-    st.info(usuarios[usuario].get("lider") or "Sin líder")
 
-    st.markdown("**Tus miembros directos:**")
-    mis_miembros = usuarios[usuario].get("miembros", [])
-    if mis_miembros:
-        for m in mis_miembros:
-            st.write(f"• {m}")
-    else:
-        st.caption("Todavía no tenés miembros directos.")
-
-    st.markdown("**Red completa:**")
-    def mostrar_red(user, nivel=0):
-        st.write(" " * nivel + f"• {user}")
-        for m in usuarios.get(user, {}).get("miembros", []):
-            mostrar_red(m, nivel + 1)
-
-    mostrar_red(usuario)
-
-# ================== NOTAS ==================
 elif seccion == "📝 Notas":
     st.subheader("📝 Notas personales")
     nota_actual = notas.get(usuario, "")
@@ -336,12 +315,4 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("✅ Notas guardadas")
-
-
-
-
-
-
-
-
 
