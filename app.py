@@ -203,4 +203,25 @@ elif seccion == "💰 Balance":
     if ingresos_user:
         st.dataframe(pd.DataFrame(ingresos_user))
 
+# ---------- Historial ---------- 
+st.markdown("### 🧾 Ventas registradas") 
+if ingresos[usuario]: 
+    df_ingresos = pd.DataFrame(ingresos[usuario]) 
+    df_ingresos["fecha"] = pd.to_datetime(df_ingresos["fecha"]) 
+    st.dataframe(df_ingresos.sort_values("fecha", ascending=False), use_container_width=True) 
+else: st.caption("Todavía no hay ventas registradas.") st.markdown("### 🧾 Costos registrados") 
+if costos[usuario]: 
+    df_costos = pd.DataFrame(costos[usuario]) 
+    df_costos["fecha"] = pd.to_datetime(df_costos["fecha"]) 
+    st.dataframe(df_costos.sort_values("fecha", ascending=False), use_container_width=True) 
+else: st.caption("Todavía no hay costos registrados.") 
+    elif seccion == "🌳 Red": st.subheader("🌳 Tu red") 
+st.info(f"Tu líder: {usuarios[usuario].get('lider') or 'Sin líder'}") for m in usuarios[usuario].get("miembros", []): 
+    st.write(f"• {m}") 
+elif seccion == "📝 Notas": 
+st.subheader("📝 Notas personales") 
+nota_actual = notas.get(usuario, "") 
+nota_nueva = st.text_area("Metas, pendientes, ideas", value=nota_actual, height=160) 
+if st.button("💾 Guardar notas", use_container_width=True): notas[usuario] = nota_nueva guardar_data(data, sha) 
+st.success("Notas guardadas")
 
