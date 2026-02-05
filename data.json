@@ -75,7 +75,7 @@
       "precio": 60506.0
     },
     "Cal Mag D": {
-      "vendidos": 0,
+      "vendidos": 1,
       "costo": 19306.0,
       "precio": 31139.0
     },
@@ -113,6 +113,15 @@
     "savar": []
   },
   "ingresos": {
-    "savar": []
+    "savar": [],
+    "prueba": [
+      {
+        "fecha": "2026-02-05",
+        "producto": "Cal Mag D",
+        "precio_venta": 31139.0,
+        "costo": 19306.0,
+        "ganancia": 11833.0
+      }
+    ]
   }
 }
