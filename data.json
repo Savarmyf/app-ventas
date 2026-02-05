@@ -16,14 +16,7 @@
   },
   "registros": {
     "prueba": [
-      {
-        "fecha": "2026-02-01",
-        "cantidad": 4
-      },
-      {
-        "fecha": "2026-02-02",
-        "cantidad": 3
-      }
+      {}
     ],
     "savar": [
       {
@@ -38,14 +31,7 @@
   },
   "demostraciones": {
     "prueba": [
-      {
-        "fecha": "2026-02-02",
-        "cantidad": 1
-      },
-      {
-        "fecha": "2026-02-01",
-        "cantidad": 2
-      }
+      {}
     ],
     "savar": [
       {
@@ -96,21 +82,7 @@
     }
   },
   "ventas": [
-    {
-      "usuario": "prueba",
-      "producto": "Cal Mag D",
-      "fecha": "2026-02-02"
-    },
-    {
-      "usuario": "prueba",
-      "producto": "Batido Chocolate",
-      "fecha": "2026-02-02"
-    },
-    {
-      "usuario": "savar",
-      "producto": "Cal Mag D",
-      "fecha": "2026-02-05"
-    }
+    {}
   ],
   "tareas": {},
   "agenda": {},
