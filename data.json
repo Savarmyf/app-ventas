@@ -64,7 +64,7 @@
   },
   "notas": {},
   "productos": {
-    "Cal Mag D": 1,
+    "Cal Mag D": 2,
     "Doble X": 0,
     "Crema de dia": 0,
     "Daily 45": 0,
@@ -112,6 +112,15 @@
       "usuario": "prueba",
       "producto": "Batido Chocolate",
       "fecha": "2026-02-02"
+    },
+    {
+      "usuario": "savar",
+      "producto": "Cal Mag D",
+      "fecha": "2026-02-05"
     }
-  ]
+  ],
+  "tareas": {},
+  "agenda": {},
+  "costos": {},
+  "ingresos": {}
 }
