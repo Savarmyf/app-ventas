@@ -335,17 +335,19 @@ elif seccion == "💰 Balance":
 
     # ---------- Resumen ----------
     st.subheader("📊 Resumen financiero")
+    
+total_costos_productos = sum(i["costo"] for i in ingresos[usuario]) if ingresos[usuario] else 0
+total_ingresos = sum(i["precio_venta"] for i in ingresos[usuario]) if ingresos[usuario] else 0
+total_ganancia = sum(i["ganancia"] for i in ingresos[usuario]) if ingresos[usuario] else 0
 
-    total_costos = sum(c["monto"] for c in costos[usuario]) if costos[usuario] else 0
-    total_ingresos = sum(i["precio_venta"] for i in ingresos[usuario]) if ingresos[usuario] else 0
-    total_ganancia = sum(i["ganancia"] for i in ingresos[usuario]) if ingresos[usuario] else 0
-    balance = total_ganancia - total_costos
+balance = total_ganancia  # ya es ganancia neta real
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("💵 Costos", f"${total_costos:,.0f}")
-    c2.metric("💸 Ingresos", f"${total_ingresos:,.0f}")
-    c3.metric("📈 Ganancia", f"${total_ganancia:,.0f}")
-    c4.metric("🧮 Balance neto", f"${balance:,.0f}")
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("💵 Costos de productos", f"${total_costos_productos:,.0f}")
+c2.metric("💸 Ingresos", f"${total_ingresos:,.0f}")
+c3.metric("📈 Ganancia real", f"${total_ganancia:,.0f}")
+c4.metric("🧮 Balance neto", f"${balance:,.0f}")
+
 
     # ---------- Historial ----------
     st.markdown("### 🧾 Ventas registradas")
@@ -380,6 +382,7 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("Notas guardadas")
+
 
 
 
