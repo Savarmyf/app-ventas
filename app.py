@@ -123,10 +123,11 @@ st.info(f"✨ {random.choice(FRASES_MOTIVACIONALES)}")
 with st.sidebar:
     st.success(f"👋 {usuario}")
     st.link_button("📘 Guía técnica", GUIA_DRIVE_URL)
-    if st.button("🚪 Cerrar sesión"):
-        st.session_state.usuario = None
-        st.session_state.rol = None
-        st.rerun()
+if st.button("🚪 Cerrar sesión", key="logout_sidebar"):
+    st.session_state.usuario = None
+    st.session_state.rol = None
+    st.rerun()
+
 
 st.divider()
 
@@ -277,3 +278,4 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("✅ Notas guardadas")
+
