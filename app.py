@@ -178,14 +178,6 @@ if seccion == "📊 Dashboard":
     st.progress(min(demos_semana / OBJ_DEMOS_SEMANAL, 1.0))
     st.caption(f"Demos: {demos_semana} / {OBJ_DEMOS_SEMANAL}")
 
-    # Mensaje motivacional inteligente
-    st.markdown("### 💡 Mensaje para hoy")
-    if contactos_hoy_total == 0:
-        st.warning("🔥 Hoy es un gran día para contactar, ¿ya lo hiciste?")
-    elif demos_hoy_total == 0:
-        st.info("🚀 Buen arranque. ¿Sumamos una demo hoy?")
-    else:
-        st.success("👏 Vas muy bien hoy. Mantené el ritmo.")
 
 # ================== REGISTRO ==================
 elif seccion == "🗓 Registro":
@@ -273,5 +265,6 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("✅ Notas guardadas")
+
 
 
