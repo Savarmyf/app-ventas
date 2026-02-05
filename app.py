@@ -180,48 +180,56 @@ elif seccion == "💰 Balance":
 
     with st.expander("Agregar producto"):
         nombre = st.text_input("Nombre")
-        costo = st.number_input("Costo", 0.0)
-        precio = st.number_input("Precio", 0.0)
+        costo = st.number_input("Costo", min_value=0.0, step=100.0)
+        precio = st.number_input("Precio", min_value=0.0, step=100.0)
 
         if st.button("Guardar producto"):
-            productos[nombre] = {"costo": float(costo), "precio": float(precio)}
+            productos[nombre] = {
+                "vendidos": productos.get(nombre, {}).get("vendidos", 0),
+                "costo": float(costo),
+                "precio": float(precio)
+            }
             guardar_data(data, sha)
             st.success("Producto guardado")
 
     st.subheader("📊 Resumen")
 
     ingresos_user = ingresos.get(usuario, [])
-    total_ingresos = sum(i["precio_venta"] for i in ingresos_user)
-    total_costos = sum(i["costo"] for i in ingresos_user)
-    total_ganancia = sum(i["ganancia"] for i in ingresos_user)
+    total_ingresos = sum(i.get("precio_venta", 0) for i in ingresos_user)
+    total_costos = sum(i.get("costo", 0) for i in ingresos_user)
+    total_ganancia = sum(i.get("ganancia", 0) for i in ingresos_user)
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Ingresos", f"${total_ingresos:,.0f}")
     c2.metric("Costos", f"${total_costos:,.0f}")
     c3.metric("Ganancia", f"${total_ganancia:,.0f}")
 
+    st.markdown("### 🧾 Ventas registradas")
     if ingresos_user:
-        st.dataframe(pd.DataFrame(ingresos_user))
+        df_ingresos = pd.DataFrame(ingresos_user)
+        df_ingresos["fecha"] = pd.to_datetime(df_ingresos["fecha"])
+        st.dataframe(df_ingresos.sort_values("fecha", ascending=False), use_container_width=True)
+    else:
+        st.caption("Todavía no hay ventas registradas.")
 
-# ---------- Historial ---------- 
-st.markdown("### 🧾 Ventas registradas") 
-if ingresos[usuario]: 
-    df_ingresos = pd.DataFrame(ingresos[usuario]) 
-    df_ingresos["fecha"] = pd.to_datetime(df_ingresos["fecha"]) 
-    st.dataframe(df_ingresos.sort_values("fecha", ascending=False), use_container_width=True) 
-else: st.caption("Todavía no hay ventas registradas.") st.markdown("### 🧾 Costos registrados") 
-if costos[usuario]: 
-    df_costos = pd.DataFrame(costos[usuario]) 
-    df_costos["fecha"] = pd.to_datetime(df_costos["fecha"]) 
-    st.dataframe(df_costos.sort_values("fecha", ascending=False), use_container_width=True) 
-else: st.caption("Todavía no hay costos registrados.") 
-    elif seccion == "🌳 Red": st.subheader("🌳 Tu red") 
-st.info(f"Tu líder: {usuarios[usuario].get('lider') or 'Sin líder'}") for m in usuarios[usuario].get("miembros", []): 
-    st.write(f"• {m}") 
-elif seccion == "📝 Notas": 
-st.subheader("📝 Notas personales") 
-nota_actual = notas.get(usuario, "") 
-nota_nueva = st.text_area("Metas, pendientes, ideas", value=nota_actual, height=160) 
-if st.button("💾 Guardar notas", use_container_width=True): notas[usuario] = nota_nueva guardar_data(data, sha) 
-st.success("Notas guardadas")
 
+# -------------------- RED --------------------
+elif seccion == "🌳 Red":
+    st.subheader("🌳 Tu red")
+    st.info(f"Tu líder: {usuarios[usuario].get('lider') or 'Sin líder'}")
+
+    for m in usuarios[usuario].get("miembros", []):
+        st.write(f"• {m}")
+
+
+# -------------------- NOTAS --------------------
+elif seccion == "📝 Notas":
+    st.subheader("📝 Notas personales")
+
+    nota_actual = notas.get(usuario, "")
+    nota_nueva = st.text_area("Metas, pendientes, ideas", value=nota_actual, height=160)
+
+    if st.button("💾 Guardar notas", use_container_width=True):
+        notas[usuario] = nota_nueva
+        guardar_data(data, sha)
+        st.success("Notas guardadas")
