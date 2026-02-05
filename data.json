@@ -88,6 +88,11 @@
       "vendidos": 2,
       "costo": 36844.0,
       "precio": 54671.0
+    },
+    "Probioticos": {
+      "vendidos": 0,
+      "costo": 59818.0,
+      "precio": 82588.0
     }
   },
   "ventas": [
