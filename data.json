@@ -83,6 +83,11 @@
       "vendidos": 0,
       "costo": 17974.0,
       "precio": 26671.0
+    },
+    "Fibra en Polvo": {
+      "vendidos": 0,
+      "costo": 36844.0,
+      "precio": 54671.0
     }
   },
   "ventas": [
