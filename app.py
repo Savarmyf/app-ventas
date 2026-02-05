@@ -54,6 +54,11 @@ productos = data["productos"]
 ventas = data["ventas"]
 planes = data.get("planes", {})
 data["planes"] = planes
+tareas = data.get("tareas", {})
+data["tareas"] = tareas
+agenda = data.get("agenda", {})
+data["agenda"] = agenda
+
 
 # -------------------- Login --------------------
 if "usuario" not in st.session_state:
@@ -95,30 +100,30 @@ rol = usuarios[usuario]["rol"]
 # -------------------- Mensaje motivacional --------------------
 st.subheader("💡 Mensaje para hoy")
 
+hoy_str = date.today().isoformat()
+registros_user = registros.get(usuario, [])
+demos_user = demostraciones.get(usuario, [])
+
+hoy_contactos = any(r["fecha"] == hoy_str and r["cantidad"] > 0 for r in registros_user)
+hoy_demos = any(d["fecha"] == hoy_str and d["cantidad"] > 0 for d in demos_user)
+
+if not hoy_contactos:
+    st.warning("🔥 Hoy todavía no sumaste contactos. 1 acción ahora cambia el día.")
+elif hoy_contactos and not hoy_demos:
+    st.info("⚡ Buen arranque. Ahora convertí: ¿una demo hoy?")
+else:
+    st.success("🚀 Día completo: contactos + demos. Seguimos construyendo.")
+
 FRASES_MOTIVACIONALES = [
-    "Sos importante. Tu constancia hoy cambia tu futuro. 💪",
-    "La paz no es una opción, es una necesidad. Elegí avanzar hoy.",
-    "Aunque hoy cueste, mañana te lo vas a agradecer.",
-    "No se trata de motivación, se trata de disciplina.",
-    "Un contacto hoy es una oportunidad que ayer no existía.",
-    "No abandones en el día que más necesitás avanzar.",
-    "Paso a paso también es progreso.",
-    "No tenés que hacerlo perfecto, tenés que hacerlo.",
-    "Tu versión de dentro de 6 meses depende de lo que hagas hoy.",
-    "Constancia > ganas. Siempre."
+    "El que insiste gana.",
+    "Hoy es el día que estabas esperando.",
+    "No es suerte, es volumen.",
+    "Aunque sea 1 hoy, suma.",
+    "Tu yo del futuro te va a agradecer lo que hagas hoy.",
 ]
 
-hoy_str = date.today().strftime("%Y-%m-%d")
-mis_contactos = registros.get(usuario, [])
-contactos_hoy = any(r["fecha"] == hoy_str for r in mis_contactos)
-
-if not contactos_hoy:
-    st.warning("🔥 Hoy es un gran día para contactar, ¿ya lo hiciste?")
-else:
-    st.success("🚀 Bien ahí, ya sumaste contactos hoy. ¿Vamos por una demo o un plan?")
-    
-st.info(f"✨ {random.choice(FRASES_MOTIVACIONALES)}")
-
+import random
+st.info("✨ " + random.choice(FRASES_MOTIVACIONALES))
 
 
 # -------------------- Sidebar --------------------
@@ -179,7 +184,69 @@ if seccion == "📊 Dashboard":
 
     st.progress(min(demos_semana / OBJ_DEMOS_SEMANAL, 1.0))
     st.caption(f"Demos: {demos_semana} / {OBJ_DEMOS_SEMANAL}")
+# ====================== Tareas =================
+st.subheader("✅ Tareas del día")
 
+tareas.setdefault(usuario, [])
+
+with st.expander("➕ Agregar tarea"):
+    desc = st.text_input("Descripción (ej: Llamar a Juan)")
+    fecha_limite = st.date_input("Fecha límite", value=date.today())
+    if st.button("Agregar tarea"):
+        tareas[usuario].append({
+            "desc": desc,
+            "fecha": fecha_limite.isoformat(),
+            "hecha": False
+        })
+        guardar_data(data, sha)
+        st.success("Tarea agregada")
+
+st.write("📋 Tus tareas:")
+for i, t in enumerate(tareas[usuario]):
+    col1, col2, col3 = st.columns([4, 2, 1])
+    col1.write(f"• {t['desc']}")
+    col2.write(f"📅 {t['fecha']}")
+    if not t["hecha"]:
+        if col3.button("✔️", key=f"tarea_{i}"):
+            tareas[usuario][i]["hecha"] = True
+            guardar_data(data, sha)
+            st.rerun()
+    else:
+        col3.write("✅")
+
+
+# =============== Agenda ====================
+st.subheader("📅 Agenda (reuniones, demos, seguimientos)")
+
+agenda.setdefault(usuario, [])
+
+with st.expander("➕ Agendar evento"):
+    tipo = st.selectbox("Tipo", ["Demo", "Reunión", "Seguimiento"])
+    titulo = st.text_input("Título (ej: Demo con Juan)")
+    fecha_evento = st.date_input("Fecha del evento", value=date.today())
+
+    if st.button("Agendar"):
+        agenda[usuario].append({
+            "tipo": tipo,
+            "titulo": titulo,
+            "fecha": fecha_evento.isoformat(),
+            "hecho": False
+        })
+        guardar_data(data, sha)
+        st.success("Evento agendado")
+
+st.write("🗓 Próximos eventos:")
+for i, e in enumerate(sorted(agenda[usuario], key=lambda x: x["fecha"])):
+    col1, col2, col3 = st.columns([4, 2, 1])
+    col1.write(f"• [{e['tipo']}] {e['titulo']}")
+    col2.write(f"📅 {e['fecha']}")
+    if not e["hecho"]:
+        if col3.button("✔️ Hecho", key=f"agenda_{i}"):
+            agenda[usuario][i]["hecho"] = True
+            guardar_data(data, sha)
+            st.rerun()
+    else:
+        col3.write("✅")
 
 # ================== REGISTRO ==================
 elif seccion == "🗓 Registro":
@@ -267,6 +334,7 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("✅ Notas guardadas")
+
 
 
 
