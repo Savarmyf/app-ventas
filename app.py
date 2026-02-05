@@ -42,6 +42,16 @@ def guardar_data(data, sha):
 
 data, sha = cargar_data()
 
+# Blindaje de datos rotos
+for k in ["registros", "demostraciones", "planes"]:
+    data.setdefault(k, {})
+
+for user, lista in data["registros"].items():
+    data["registros"][user] = [r for r in lista if isinstance(r, dict) and "fecha" in r]
+
+for user, lista in data["demostraciones"].items():
+    data["demostraciones"][user] = [r for r in lista if isinstance(r, dict) and "fecha" in r]
+
 # -------- Blindaje --------
 usuarios = data.get("usuarios", {})
 registros = data.get("registros", {})
@@ -233,3 +243,4 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("Notas guardadas")
+
