@@ -68,6 +68,11 @@
       "vendidos": 0,
       "costo": 84690.0,
       "precio": 114742.0
+    },
+    "Proteina Vegetal": {
+      "vendidos": 0,
+      "costo": 43825.0,
+      "precio": 60506.0
     }
   },
   "ventas": [
