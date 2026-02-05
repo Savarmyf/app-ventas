@@ -58,6 +58,10 @@ tareas = data.get("tareas", {})
 data["tareas"] = tareas
 agenda = data.get("agenda", {})
 data["agenda"] = agenda
+costos = data.get("costos", {})
+data["costos"] = costos
+ingresos = data.get("ingresos", {})
+data["ingresos"] = ingresos
 
 
 # -------------------- Login --------------------
@@ -296,6 +300,78 @@ elif seccion == "🛒 Ventas":
             st.write(f"• **{p}** — {v}")
     else:
         st.info("Todavía no hay ventas.")
+st.markdown("## 💰 Balance de dinero")
+
+# Inicializar si no existen
+costos.setdefault(usuario, [])
+ingresos.setdefault(usuario, [])
+
+# --------- Registrar COSTO ---------
+with st.expander("➕ Registrar costo"):
+    fecha_costo = st.date_input("Fecha del costo", value=date.today(), key="fecha_costo")
+    concepto = st.text_input("Concepto (ej: Combustible, Internet, Muestras)")
+    monto_costo = st.number_input("Monto del costo", min_value=0.0, step=500.0)
+
+    if st.button("Guardar costo"):
+        costos[usuario].append({
+            "fecha": fecha_costo.isoformat(),
+            "concepto": concepto,
+            "monto": float(monto_costo)
+        })
+        guardar_data(data, sha)
+        st.success("✅ Costo registrado")
+
+# --------- Registrar INGRESO (venta con ganancia) ---------
+with st.expander("➕ Registrar ingreso (venta)"):
+    producto_ingreso = st.selectbox("Producto", list(productos.keys()), key="producto_ingreso")
+    fecha_ingreso = st.date_input("Fecha de la venta", value=date.today(), key="fecha_ingreso")
+    precio_venta = st.number_input("Precio de venta", min_value=0.0, step=500.0)
+    costo_producto = st.number_input("Costo del producto", min_value=0.0, step=500.0)
+
+    ganancia = precio_venta - costo_producto
+    st.write(f"📈 Ganancia estimada: **${ganancia:,.0f}**")
+
+    if st.button("Guardar ingreso"):
+        ingresos[usuario].append({
+            "fecha": fecha_ingreso.isoformat(),
+            "producto": producto_ingreso,
+            "precio_venta": float(precio_venta),
+            "costo": float(costo_producto),
+            "ganancia": float(ganancia)
+        })
+        guardar_data(data, sha)
+        st.success("✅ Ingreso registrado")
+
+# --------- Resumen ---------
+st.markdown("### 📊 Resumen financiero")
+
+total_costos = sum(c["monto"] for c in costos[usuario])
+total_ingresos = sum(i["precio_venta"] for i in ingresos[usuario])
+total_ganancia = sum(i["ganancia"] for i in ingresos[usuario])
+balance = total_ganancia - total_costos
+
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("💵 Costos", f"${total_costos:,.0f}")
+c2.metric("💸 Ingresos", f"${total_ingresos:,.0f}")
+c3.metric("📈 Ganancia", f"${total_ganancia:,.0f}")
+c4.metric("🧮 Balance neto", f"${balance:,.0f}")
+
+# --------- Historial ---------
+st.markdown("### 🧾 Historial de costos")
+if costos[usuario]:
+    df_costos = pd.DataFrame(costos[usuario])
+    df_costos["fecha"] = pd.to_datetime(df_costos["fecha"])
+    st.dataframe(df_costos.sort_values("fecha", ascending=False), use_container_width=True)
+else:
+    st.caption("Todavía no registraste costos.")
+
+st.markdown("### 🧾 Historial de ingresos")
+if ingresos[usuario]:
+    df_ingresos = pd.DataFrame(ingresos[usuario])
+    df_ingresos["fecha"] = pd.to_datetime(df_ingresos["fecha"])
+    st.dataframe(df_ingresos.sort_values("fecha", ascending=False), use_container_width=True)
+else:
+    st.caption("Todavía no registraste ingresos.")
 
 
 elif seccion == "🌳 Red":
@@ -315,4 +391,5 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         guardar_data(data, sha)
         st.success("✅ Notas guardadas")
+
 
