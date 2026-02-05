@@ -78,6 +78,11 @@
       "vendidos": 0,
       "costo": 19306.0,
       "precio": 31139.0
+    },
+    "Vitamina C": {
+      "vendidos": 0,
+      "costo": 17974.0,
+      "precio": 26671.0
     }
   },
   "ventas": [
