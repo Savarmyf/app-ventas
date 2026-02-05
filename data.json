@@ -90,7 +90,7 @@
       "precio": 54671.0
     },
     "Probioticos": {
-      "vendidos": 0,
+      "vendidos": 1,
       "costo": 59818.0,
       "precio": 82588.0
     }
@@ -140,6 +140,13 @@
         "precio_venta": 54671.0,
         "costo": 36844.0,
         "ganancia": 17827.0
+      },
+      {
+        "fecha": "2026-02-05",
+        "producto": "Probioticos",
+        "precio_venta": 82588.0,
+        "costo": 59818.0,
+        "ganancia": 22770.0
       }
     ]
   }
