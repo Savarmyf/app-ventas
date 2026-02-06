@@ -182,7 +182,7 @@ elif seccion == "🛒 Ventas":
 
 # -------------------- Balance --------------------
 elif seccion == "💰 Balance":
-with st.expander("Agregar producto"):
+    with st.expander("Agregar producto"):
     nombre = st.text_input("Nombre")
     costo = st.number_input("Costo", min_value=0.0)
     precio = st.number_input("Precio", min_value=0.0)
@@ -219,6 +219,7 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         save_data(data)
         st.success("Notas guardadas")
+
 
 
 
