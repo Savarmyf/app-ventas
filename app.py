@@ -159,8 +159,12 @@ elif seccion == "🛒 Ventas":
     else:
         prod_name = st.selectbox("Producto", list(productos.keys()))
         cantidad = st.number_input("Cantidad", 1)
+
         prod = productos[prod_name]
         ganancia = prod["precio"] - prod["costo"]
+        puntos = prod.get("puntos", 0)
+
+        st.info(f"Ganancia por unidad: ${ganancia:,.0f} | Puntos por unidad: {puntos}")
 
         if st.button("Registrar venta"):
             ingresos.setdefault(usuario, [])
@@ -170,27 +174,41 @@ elif seccion == "🛒 Ventas":
                     "producto": prod_name,
                     "precio_venta": prod["precio"],
                     "costo": prod["costo"],
-                    "ganancia": ganancia
+                    "ganancia": ganancia,
+                    "puntos": puntos
                 })
             save_data(data)
             st.success("Venta registrada")
 
 # -------------------- Balance --------------------
 elif seccion == "💰 Balance":
-    with st.expander("Agregar producto"):
-        nombre = st.text_input("Nombre")
-        costo = st.number_input("Costo", min_value=0.0)
-        precio = st.number_input("Precio", min_value=0.0)
+with st.expander("Agregar producto"):
+    nombre = st.text_input("Nombre")
+    costo = st.number_input("Costo", min_value=0.0)
+    precio = st.number_input("Precio", min_value=0.0)
+    puntos = st.number_input("Puntos", min_value=0.0, step=1.0)
 
-        if st.button("Guardar producto"):
-            productos[nombre] = {"costo": float(costo), "precio": float(precio)}
-            save_data(data)
-            st.success("Producto guardado")
+    if st.button("Guardar producto"):
+        productos[nombre] = {
+            "costo": float(costo),
+            "precio": float(precio),
+            "puntos": float(puntos)
+        }
+        save_data(data)
+        st.success("Producto guardado")
 
-    ingresos_user = ingresos.get(usuario, [])
-    if ingresos_user:
-        df = pd.DataFrame(ingresos_user)
-        st.dataframe(df, use_container_width=True)
+
+ingresos_user = ingresos.get(usuario, [])
+total_ingresos = sum(i.get("precio_venta", 0) for i in ingresos_user)
+total_costos = sum(i.get("costo", 0) for i in ingresos_user)
+total_ganancia = sum(i.get("ganancia", 0) for i in ingresos_user)
+total_puntos = sum(i.get("puntos", 0) for i in ingresos_user)
+
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Ingresos", f"${total_ingresos:,.0f}")
+c2.metric("Costos", f"${total_costos:,.0f}")
+c3.metric("Ganancia", f"${total_ganancia:,.0f}")
+c4.metric("Puntos", f"{total_puntos:,.0f}")
 
 # -------------------- Notas --------------------
 elif seccion == "📝 Notas":
@@ -201,5 +219,6 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         save_data(data)
         st.success("Notas guardadas")
+
 
 
