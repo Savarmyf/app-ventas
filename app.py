@@ -42,12 +42,25 @@ def save_data(data):
 init_data()
 data = load_data()
 
+# Blindaje de estructura (por si el archivo está vacío o incompleto)
+data.setdefault("usuarios", {})
+data.setdefault("registros", {})
+data.setdefault("demostraciones", {})
+data.setdefault("planes", {})
+data.setdefault("notas", {})
+data.setdefault("productos", {})
+data.setdefault("ingresos", {})
+data.setdefault("costos", {})
+
+save_data(data)  # asegura estructura mínima
+
 usuarios = data["usuarios"]
 registros = data["registros"]
 demostraciones = data["demostraciones"]
 productos = data["productos"]
 notas = data["notas"]
 ingresos = data["ingresos"]
+
 
 # -------------------- Login --------------------
 if "usuario" not in st.session_state:
@@ -188,4 +201,5 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         save_data(data)
         st.success("Notas guardadas")
+
 
