@@ -1,1 +1,55 @@
+{
+  "usuarios": {
+    "prueba": {
+      "password": "b9f1d1c87e8f9f1a45f8f4d2b0b0d3f9b9f77b4eafbb7f5b0d0b8e1a3a2d0a4e",
+      "rol": "lider",
+      "lider": null,
+      "miembros": []
+    },
+    "savar": {
+      "password": "4e2a1b3c9c4b8f6b7f1b3a2d9e5c0a7b4c1e2d3f9a8b7c6d5e4f3a2b1c0d9e",
+      "rol": "lider",
+      "lider": null,
+      "miembros": []
+    }
+  },
+  "registros": {
+    "prueba": [],
+    "savar": [
+      { "fecha": "2026-02-02", "cantidad": 9 },
+      { "fecha": "2026-02-03", "cantidad": 0 }
+    ]
+  },
+  "demostraciones": {
+    "prueba": [],
+    "savar": [
+      { "fecha": "2026-02-03", "cantidad": 0 }
+    ]
+  },
+  "planes": {
+    "savar": [
+      { "fecha": "2026-02-03", "cantidad": 1 }
+    ]
+  },
+  "notas": {},
+  "productos": {
+    "Doble X": { "costo": 84690.0, "precio": 114742.0 },
+    "Proteina Vegetal": { "costo": 43825.0, "precio": 60506.0 },
+    "Cal Mag D": { "costo": 19306.0, "precio": 31139.0 },
+    "Vitamina C": { "costo": 17974.0, "precio": 26671.0 },
+    "Fibra en Polvo": { "costo": 36844.0, "precio": 54671.0 },
+    "Probioticos": { "costo": 59818.0, "precio": 82588.0 }
+  },
+  "ingresos": {
+    "savar": [],
+    "prueba": [
+      { "fecha": "2026-02-05", "producto": "Cal Mag D", "precio_venta": 31139.0, "costo": 19306.0, "ganancia": 11833.0 },
+      { "fecha": "2026-02-05", "producto": "Fibra en Polvo", "precio_venta": 54671.0, "costo": 36844.0, "ganancia": 17827.0 },
+      { "fecha": "2026-02-05", "producto": "Fibra en Polvo", "precio_venta": 54671.0, "costo": 36844.0, "ganancia": 17827.0 },
+      { "fecha": "2026-02-05", "producto": "Probioticos", "precio_venta": 82588.0, "costo": 59818.0, "ganancia": 22770.0 }
+    ]
+  },
+  "costos": {}
+}
+
 
