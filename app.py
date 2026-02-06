@@ -10,6 +10,7 @@ from pathlib import Path
 # -------------------- CONFIG --------------------
 DATA_DIR = Path("data")
 DATA_FILE = DATA_DIR / "data.json"
+ADMIN_USERNAME = "admin"
 
 st.set_page_config(page_title="Constancia del Equipo", page_icon="📊", layout="centered")
 st.title("📊 Constancia del Equipo")
@@ -51,6 +52,9 @@ data.setdefault("notas", {})
 data.setdefault("productos", {})
 data.setdefault("ingresos", {})
 data.setdefault("costos", {})
+data.setdefault("mensajes_admin", [])
+mensajes_admin = data["mensajes_admin"]
+
 
 save_data(data)  # asegura estructura mínima
 
@@ -61,6 +65,15 @@ productos = data["productos"]
 notas = data["notas"]
 ingresos = data["ingresos"]
 
+# Crear admin por defecto si no existe
+if ADMIN_USERNAME not in usuarios:
+    usuarios[ADMIN_USERNAME] = {
+        "password": hash_password("admin123"),  # después cambiá la clave desde el panel admin
+        "rol": "admin",
+        "lider": None,
+        "miembros": []
+    }
+    save_data(data)
 
 # -------------------- Login --------------------
 if "usuario" not in st.session_state:
@@ -81,6 +94,18 @@ if st.session_state.usuario is None:
                 st.rerun()
             else:
                 st.error("Usuario o contraseña incorrectos")
+                
+  if st.button("Olvidé mi contraseña"):
+    if user:
+        mensajes_admin.append({
+            "fecha": date.today().isoformat(),
+            "usuario": user,
+            "mensaje": "Olvidó la contraseña"
+        })
+        save_data(data)
+        st.success("Mensaje enviado al administrador. Te va a contactar.")
+    else:
+        st.error("Ingresá tu usuario primero.")
 
     with col2:
         if st.button("Registrarme"):
@@ -127,10 +152,11 @@ st.info("✨ " + random.choice(FRASES))
 
 # -------------------- Sidebar --------------------
 with st.sidebar:
-    seccion = st.radio("Menú", ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "📝 Notas"])
-    if st.button("Cerrar sesión"):
-        st.session_state.usuario = None
-        st.rerun()
+    opciones = ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "📝 Notas"]
+    if usuarios[usuario]["rol"] == "admin":
+        opciones.append("👑 Admin")
+
+    seccion = st.radio("Menú", opciones)
 
 # -------------------- Dashboard --------------------
 if seccion == "📊 Dashboard":
@@ -184,23 +210,25 @@ elif seccion == "🛒 Ventas":
 elif seccion == "💰 Balance":
     st.subheader("📦 Productos")
 
-    with st.expander("Agregar producto"):
-        nombre = st.text_input("Nombre")
-        costo = st.number_input("Costo", min_value=0.0)
-        precio = st.number_input("Precio", min_value=0.0)
-        puntos = st.number_input("Puntos", min_value=0.0, step=1.0)
+    if usuarios[usuario]["rol"] == "admin":
+        with st.expander("Agregar / Editar producto"):
+            nombre = st.text_input("Nombre")
+            costo = st.number_input("Costo", min_value=0.0)
+            precio = st.number_input("Precio", min_value=0.0)
+            puntos = st.number_input("Puntos", min_value=0.0, step=1.0)
 
-        if st.button("Guardar producto"):
-            productos[nombre] = {
-                "costo": float(costo),
-                "precio": float(precio),
-                "puntos": float(puntos)
-            }
-            save_data(data)
-            st.success("Producto guardado")
+            if st.button("Guardar producto"):
+                productos[nombre] = {
+                    "costo": float(costo),
+                    "precio": float(precio),
+                    "puntos": float(puntos)
+                }
+                save_data(data)
+                st.success("Producto guardado")
+    else:
+        st.info("🔒 Solo el administrador puede modificar productos.")
 
-    st.subheader("📊 Resumen")
-
+    # Resumen (visible para todos)
     ingresos_user = ingresos.get(usuario, [])
     total_ingresos = sum(i.get("precio_venta", 0) for i in ingresos_user)
     total_costos = sum(i.get("costo", 0) for i in ingresos_user)
@@ -213,11 +241,6 @@ elif seccion == "💰 Balance":
     c3.metric("Ganancia", f"${total_ganancia:,.0f}")
     c4.metric("Puntos", f"{total_puntos:,.0f}")
 
-    if ingresos_user:
-        df = pd.DataFrame(ingresos_user)
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.caption("Todavía no hay ventas registradas.")
 
 # -------------------- Notas --------------------
 elif seccion == "📝 Notas":
@@ -228,6 +251,42 @@ elif seccion == "📝 Notas":
         notas[usuario] = nota_nueva
         save_data(data)
         st.success("Notas guardadas")
+
+elif seccion == "👑 Admin":
+    st.subheader("👑 Panel de Administrador")
+
+    st.markdown("### 📩 Mensajes de usuarios")
+    if mensajes_admin:
+        for m in mensajes_admin:
+            st.info(f"{m['fecha']} - {m['usuario']}: {m['mensaje']}")
+    else:
+        st.caption("No hay mensajes.")
+
+    st.markdown("### 👤 Usuarios")
+    user_sel = st.selectbox("Usuario", list(usuarios.keys()))
+    nueva_pass = st.text_input("Nueva contraseña", type="password")
+
+    if st.button("Resetear contraseña"):
+        if not nueva_pass:
+            st.error("Ingresá una contraseña nueva")
+        else:
+            usuarios[user_sel]["password"] = hash_password(nueva_pass)
+            save_data(data)
+            st.success("Contraseña actualizada")
+
+    st.markdown("### 📊 Datos de todo el equipo")
+    all_ingresos = []
+    for u, lista in ingresos.items():
+        for i in lista:
+            row = i.copy()
+            row["usuario"] = u
+            all_ingresos.append(row)
+
+    if all_ingresos:
+        df_all = pd.DataFrame(all_ingresos)
+        st.dataframe(df_all, use_container_width=True)
+    else:
+        st.caption("Todavía no hay ventas globales.")
 
 
 
