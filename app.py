@@ -76,6 +76,7 @@ if ADMIN_USERNAME not in usuarios:
     save_data(data)
 
 # -------------------- Login --------------------
+# -------------------- Login --------------------
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
 
@@ -94,18 +95,6 @@ if st.session_state.usuario is None:
                 st.rerun()
             else:
                 st.error("Usuario o contraseña incorrectos")
-                
-  if st.button("Olvidé mi contraseña"):
-    if user:
-        mensajes_admin.append({
-            "fecha": date.today().isoformat(),
-            "usuario": user,
-            "mensaje": "Olvidó la contraseña"
-        })
-        save_data(data)
-        st.success("Mensaje enviado al administrador. Te va a contactar.")
-    else:
-        st.error("Ingresá tu usuario primero.")
 
     with col2:
         if st.button("Registrarme"):
@@ -125,9 +114,22 @@ if st.session_state.usuario is None:
                 st.session_state.usuario = user
                 st.rerun()
 
+    st.divider()
+
+    if st.button("Olvidé mi contraseña"):
+        if user:
+            mensajes_admin.append({
+                "fecha": date.today().isoformat(),
+                "usuario": user,
+                "mensaje": "Olvidó la contraseña"
+            })
+            save_data(data)
+            st.success("Mensaje enviado al administrador. Te va a contactar.")
+        else:
+            st.error("Ingresá tu usuario primero.")
+
     st.stop()
 
-usuario = st.session_state.usuario
 
 # -------------------- Mensaje motivacional --------------------
 st.subheader("💡 Mensaje para hoy")
@@ -287,6 +289,7 @@ elif seccion == "👑 Admin":
         st.dataframe(df_all, use_container_width=True)
     else:
         st.caption("Todavía no hay ventas globales.")
+
 
 
 
