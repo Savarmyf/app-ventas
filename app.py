@@ -138,7 +138,7 @@ if st.session_state.usuario is None:
 usuario = st.session_state.usuario
 
 # -------------------- App principal --------------------
-usuario = st.session_state.usuario
+
 rol = usuarios.get(usuario, {}).get("rol", "miembro")
 
 st.sidebar.success(f"👤 Sesión: {usuario} ({rol})")
@@ -199,7 +199,7 @@ elif seccion == "🗓 Registro":
 # -------------------- Ventas --------------------
 elif seccion == "🛒 Ventas":
     if not productos:
-        st.info("Cargá productos primero en 💰 Balance")
+        st.info("No hay productos cargados todavía.")
     else:
         prod_name = st.selectbox("Producto", list(productos.keys()))
         cantidad = st.number_input("Cantidad", 1)
@@ -214,7 +214,7 @@ elif seccion == "🛒 Ventas":
             ingresos.setdefault(usuario, [])
             for _ in range(cantidad):
                 ingresos[usuario].append({
-                    "fecha": hoy,
+                    "fecha": date.today().isoformat(),
                     "producto": prod_name,
                     "precio_venta": prod["precio"],
                     "costo": prod["costo"],
@@ -290,19 +290,3 @@ elif seccion == "👑 Admin" and rol == "admin":
             usuarios[user_sel]["password"] = hash_password(nueva_pass)
             save_data(data)
             st.success("Contraseña actualizada")
-
-    st.markdown("### 📊 Datos de todo el equipo")
-    all_ingresos = []
-    for u, lista in ingresos.items():
-        for i in lista:
-            row = i.copy()
-            row["usuario"] = u
-            all_ingresos.append(row)
-
-    if all_ingresos:
-        df_all = pd.DataFrame(all_ingresos)
-        st.dataframe(df_all, use_container_width=True)
-    else:
-        st.caption("Todavía no hay ventas globales.")
-
-
