@@ -147,40 +147,39 @@ if st.sidebar.button("Cerrar sesión"):
     st.session_state.usuario = None
     st.rerun()
 
-# -------------------- Sidebar --------------------
+# -------------------- Sidebar / Router --------------------
 with st.sidebar:
     opciones = ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "📝 Notas"]
-    if usuarios[usuario]["rol"] == "admin":
+    if rol == "admin":
         opciones.append("👑 Admin")
 
     seccion = st.radio("Menú", opciones)
 
-# -------------------- Mensaje motivacional --------------------
-st.subheader("💡 Mensaje para hoy")
-hoy = date.today().isoformat()
-
-hoy_contactos = any(r.get("fecha") == hoy and r.get("cantidad", 0) > 0 for r in registros.get(usuario, []))
-hoy_demos = any(d.get("fecha") == hoy and d.get("cantidad", 0) > 0 for d in demostraciones.get(usuario, []))
-
-if not hoy_contactos:
-    st.warning("🔥 Hoy todavía no sumaste contactos.")
-elif hoy_contactos and not hoy_demos:
-    st.info("⚡ Buen arranque. ¿Una demo hoy?")
-else:
-    st.success("🚀 Día completo.")
-
-FRASES = [
-    "El que insiste gana.",
-    "No es suerte, es volumen.",
-    "Aunque sea 1 hoy, suma.",
-]
-st.info("✨ " + random.choice(FRASES))
-
-
 # -------------------- Dashboard --------------------
 if seccion == "📊 Dashboard":
+    st.subheader("💡 Mensaje para hoy")
+    hoy = date.today().isoformat()
+
+    hoy_contactos = any(r.get("fecha") == hoy and r.get("cantidad", 0) > 0 for r in registros.get(usuario, []))
+    hoy_demos = any(d.get("fecha") == hoy and d.get("cantidad", 0) > 0 for d in demostraciones.get(usuario, []))
+
+    if not hoy_contactos:
+        st.warning("🔥 Hoy todavía no sumaste contactos.")
+    elif hoy_contactos and not hoy_demos:
+        st.info("⚡ Buen arranque. ¿Una demo hoy?")
+    else:
+        st.success("🚀 Día completo.")
+
+    FRASES = [
+        "El que insiste gana.",
+        "No es suerte, es volumen.",
+        "Aunque sea 1 hoy, suma.",
+    ]
+    st.info("✨ " + random.choice(FRASES))
+
     contactos_hoy = sum(r.get("cantidad", 0) for r in registros.get(usuario, []) if r.get("fecha") == hoy)
     demos_hoy = sum(d.get("cantidad", 0) for d in demostraciones.get(usuario, []) if d.get("fecha") == hoy)
+
     c1, c2 = st.columns(2)
     c1.metric("📞 Contactos hoy", contactos_hoy)
     c2.metric("🎤 Demos hoy", demos_hoy)
@@ -229,7 +228,7 @@ elif seccion == "🛒 Ventas":
 elif seccion == "💰 Balance":
     st.subheader("📦 Productos")
 
-    if usuarios.get(usuario, {}).get("rol") == "admin":
+    if rol == "admin":
         with st.expander("Agregar / Editar producto"):
             nombre = st.text_input("Nombre")
             costo = st.number_input("Costo", min_value=0.0)
@@ -247,7 +246,6 @@ elif seccion == "💰 Balance":
     else:
         st.info("🔒 Solo el administrador puede modificar productos.")
 
-    # Resumen (visible para todos)
     ingresos_user = ingresos.get(usuario, [])
     total_ingresos = sum(i.get("precio_venta", 0) for i in ingresos_user)
     total_costos = sum(i.get("costo", 0) for i in ingresos_user)
@@ -260,7 +258,6 @@ elif seccion == "💰 Balance":
     c3.metric("Ganancia", f"${total_ganancia:,.0f}")
     c4.metric("Puntos", f"{total_puntos:,.0f}")
 
-
 # -------------------- Notas --------------------
 elif seccion == "📝 Notas":
     nota_actual = notas.get(usuario, "")
@@ -271,7 +268,8 @@ elif seccion == "📝 Notas":
         save_data(data)
         st.success("Notas guardadas")
 
-elif seccion == "👑 Admin":
+# -------------------- Admin --------------------
+elif seccion == "👑 Admin" and rol == "admin":
     st.subheader("👑 Panel de Administrador")
 
     st.markdown("### 📩 Mensajes de usuarios")
@@ -306,16 +304,5 @@ elif seccion == "👑 Admin":
         st.dataframe(df_all, use_container_width=True)
     else:
         st.caption("Todavía no hay ventas globales.")
-
-
-
-
-
-
-
-
-
-
-
 
 
