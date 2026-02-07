@@ -3,7 +3,6 @@ import json
 from datetime import date
 import pandas as pd
 import random
-import os
 import hashlib
 from pathlib import Path
 
@@ -41,19 +40,12 @@ def load_data():
 def save_data(data):
     DATA_FILE.write_text(json.dumps(data, indent=2))
 
+# -------------------- Data --------------------
 init_data()
 data = load_data()
 
-# Blindaje de estructura (por si el archivo está vacío o incompleto)
-data.setdefault("usuarios", {})
-data.setdefault("registros", {})
-data.setdefault("demostraciones", {})
-data.setdefault("planes", {})
-data.setdefault("notas", {})
-data.setdefault("productos", {})
-data.setdefault("ingresos", {})
-data.setdefault("costos", {})
-data.setdefault("mensajes_admin", [])
+for k in ["usuarios","registros","demostraciones","planes","notas","productos","ingresos","costos","mensajes_admin"]:
+    data.setdefault(k, {} if k != "mensajes_admin" else [])
 
 usuarios = data["usuarios"]
 registros = data["registros"]
@@ -63,23 +55,22 @@ notas = data["notas"]
 ingresos = data["ingresos"]
 mensajes_admin = data["mensajes_admin"]
 
-# Blindaje de usuarios viejos (agrega rol por defecto)
+# Blindaje usuarios
 for u, info in usuarios.items():
-    if "rol" not in info:
-        info["rol"] = "miembro"
-    if "miembros" not in info:
-        info["miembros"] = []
+    info.setdefault("rol", "miembro")
+    info.setdefault("lider", None)
+    info.setdefault("miembros", [])
 
-# Crear admin por defecto si no existe
+# Crear admin
 if ADMIN_USERNAME not in usuarios:
     usuarios[ADMIN_USERNAME] = {
-        "password": hash_password("admin123"),  # después cambiá la clave desde el panel admin
+        "password": hash_password("admin123"),
         "rol": "admin",
         "lider": None,
         "miembros": []
     }
 
-save_data(data)  # asegura estructura mínima
+save_data(data)
 
 # -------------------- Login --------------------
 if "usuario" not in st.session_state:
@@ -91,9 +82,9 @@ if st.session_state.usuario is None:
     user = st.text_input("Usuario")
     password = st.text_input("Contraseña", type="password")
 
-    col1, col2 = st.columns(2)
+    c1, c2 = st.columns(2)
 
-    with col1:
+    with c1:
         if st.button("Entrar"):
             if user in usuarios and usuarios[user]["password"] == hash_password(password):
                 st.session_state.usuario = user
@@ -101,21 +92,15 @@ if st.session_state.usuario is None:
             else:
                 st.error("Usuario o contraseña incorrectos")
 
-    with col2:
+    with c2:
         if st.button("Registrarme"):
             if user in usuarios:
                 st.error("Usuario ya existe")
             elif not user or not password:
                 st.error("Completá usuario y contraseña")
             else:
-                usuarios[user] = {
-                    "password": hash_password(password),
-                    "rol": "miembro",
-                    "lider": None,
-                    "miembros": []
-                }
+                usuarios[user] = {"password": hash_password(password), "rol": "miembro", "lider": None, "miembros": []}
                 save_data(data)
-                st.success("Usuario creado")
                 st.session_state.usuario = user
                 st.rerun()
 
@@ -123,42 +108,32 @@ if st.session_state.usuario is None:
 
     if st.button("Olvidé mi contraseña"):
         if user:
-            mensajes_admin.append({
-                "fecha": date.today().isoformat(),
-                "usuario": user,
-                "mensaje": "Olvidó la contraseña"
-            })
+            mensajes_admin.append({"fecha": date.today().isoformat(), "usuario": user, "mensaje": "Olvidó la contraseña"})
             save_data(data)
-            st.success("Mensaje enviado al administrador. Te va a contactar.")
+            st.success("Aviso enviado al admin.")
         else:
             st.error("Ingresá tu usuario primero.")
 
     st.stop()
-    
+
 usuario = st.session_state.usuario
-
-# -------------------- App principal --------------------
-
 rol = usuarios.get(usuario, {}).get("rol", "miembro")
 
-st.sidebar.success(f"👤 Sesión: {usuario} ({rol})")
+# -------------------- Sidebar --------------------
+st.sidebar.success(f"👤 {usuario} ({rol})")
 
 if st.sidebar.button("Cerrar sesión"):
     st.session_state.usuario = None
     st.rerun()
 
-# -------------------- Sidebar / Router --------------------
 with st.sidebar:
-    opciones = ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "📝 Notas"]
-    if rol == "admin":
-        opciones.append("👑 Admin")
-
-    seccion = st.radio("Menú", opciones)
+    seccion = st.radio("Menú", ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "📝 Notas"] + (["👑 Admin"] if rol == "admin" else []))
 
 # -------------------- Dashboard --------------------
 if seccion == "📊 Dashboard":
-    st.subheader("💡 Mensaje para hoy")
     hoy = date.today().isoformat()
+
+    st.subheader("💡 Mensaje para hoy")
 
     hoy_contactos = any(r.get("fecha") == hoy and r.get("cantidad", 0) > 0 for r in registros.get(usuario, []))
     hoy_demos = any(d.get("fecha") == hoy and d.get("cantidad", 0) > 0 for d in demostraciones.get(usuario, []))
@@ -170,19 +145,7 @@ if seccion == "📊 Dashboard":
     else:
         st.success("🚀 Día completo.")
 
-    FRASES = [
-        "El que insiste gana.",
-        "No es suerte, es volumen.",
-        "Aunque sea 1 hoy, suma.",
-    ]
-    st.info("✨ " + random.choice(FRASES))
-
-    contactos_hoy = sum(r.get("cantidad", 0) for r in registros.get(usuario, []) if r.get("fecha") == hoy)
-    demos_hoy = sum(d.get("cantidad", 0) for d in demostraciones.get(usuario, []) if d.get("fecha") == hoy)
-
-    c1, c2 = st.columns(2)
-    c1.metric("📞 Contactos hoy", contactos_hoy)
-    c2.metric("🎤 Demos hoy", demos_hoy)
+    st.info("✨ " + random.choice(["El que insiste gana.","No es suerte, es volumen.","Aunque sea 1 hoy, suma."]))
 
 # -------------------- Registro --------------------
 elif seccion == "🗓 Registro":
@@ -199,16 +162,16 @@ elif seccion == "🗓 Registro":
 # -------------------- Ventas --------------------
 elif seccion == "🛒 Ventas":
     if not productos:
-        st.info("No hay productos cargados todavía.")
+        st.info("No hay productos cargados.")
     else:
         prod_name = st.selectbox("Producto", list(productos.keys()))
-        cantidad = st.number_input("Cantidad", 1)
+        cantidad = st.number_input("Cantidad", 1, min_value=1)
 
         prod = productos[prod_name]
         ganancia = prod["precio"] - prod["costo"]
         puntos = prod.get("puntos", 0)
 
-        st.info(f"Ganancia por unidad: ${ganancia:,.0f} | Puntos por unidad: {puntos}")
+        st.info(f"Ganancia: ${ganancia:,.0f} | Puntos: {puntos}")
 
         if st.button("Registrar venta"):
             ingresos.setdefault(usuario, [])
@@ -229,64 +192,47 @@ elif seccion == "💰 Balance":
     st.subheader("📦 Productos")
 
     if rol == "admin":
-        with st.expander("Agregar / Editar producto"):
+        with st.expander("Agregar producto"):
             nombre = st.text_input("Nombre")
             costo = st.number_input("Costo", min_value=0.0)
             precio = st.number_input("Precio", min_value=0.0)
-            puntos = st.number_input("Puntos", min_value=0.0, step=1.0)
+            puntos = st.number_input("Puntos", min_value=0.0)
 
             if st.button("Guardar producto"):
-                productos[nombre] = {
-                    "costo": float(costo),
-                    "precio": float(precio),
-                    "puntos": float(puntos)
-                }
-                save_data(data)
-                st.success("Producto guardado")
+                if not nombre:
+                    st.error("Nombre requerido")
+                else:
+                    productos[nombre] = {"costo": float(costo), "precio": float(precio), "puntos": float(puntos)}
+                    save_data(data)
+                    st.success("Producto guardado")
     else:
-        st.info("🔒 Solo el administrador puede modificar productos.")
-
-    ingresos_user = ingresos.get(usuario, [])
-    total_ingresos = sum(i.get("precio_venta", 0) for i in ingresos_user)
-    total_costos = sum(i.get("costo", 0) for i in ingresos_user)
-    total_ganancia = sum(i.get("ganancia", 0) for i in ingresos_user)
-    total_puntos = sum(i.get("puntos", 0) for i in ingresos_user)
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Ingresos", f"${total_ingresos:,.0f}")
-    c2.metric("Costos", f"${total_costos:,.0f}")
-    c3.metric("Ganancia", f"${total_ganancia:,.0f}")
-    c4.metric("Puntos", f"{total_puntos:,.0f}")
+        st.info("Solo admin puede modificar productos.")
 
 # -------------------- Notas --------------------
 elif seccion == "📝 Notas":
-    nota_actual = notas.get(usuario, "")
-    nota_nueva = st.text_area("Notas", value=nota_actual)
+    nota = st.text_area("Notas", value=notas.get(usuario, ""))
 
     if st.button("Guardar notas"):
-        notas[usuario] = nota_nueva
+        notas[usuario] = nota
         save_data(data)
         st.success("Notas guardadas")
 
 # -------------------- Admin --------------------
 elif seccion == "👑 Admin" and rol == "admin":
-    st.subheader("👑 Panel de Administrador")
+    st.subheader("👑 Panel Admin")
 
-    st.markdown("### 📩 Mensajes de usuarios")
-    if mensajes_admin:
-        for m in mensajes_admin:
-            st.info(f"{m['fecha']} - {m['usuario']}: {m['mensaje']}")
-    else:
-        st.caption("No hay mensajes.")
+    st.markdown("### 📩 Mensajes")
+    for m in mensajes_admin:
+        st.info(f"{m['fecha']} - {m['usuario']}: {m['mensaje']}")
 
-    st.markdown("### 👤 Usuarios")
-    user_sel = st.selectbox("Usuario", list(usuarios.keys()))
-    nueva_pass = st.text_input("Nueva contraseña", type="password")
+    st.markdown("### 👤 Resetear contraseña")
+    u = st.selectbox("Usuario", list(usuarios.keys()))
+    new_pass = st.text_input("Nueva contraseña", type="password")
 
-    if st.button("Resetear contraseña"):
-        if not nueva_pass:
-            st.error("Ingresá una contraseña nueva")
-        else:
-            usuarios[user_sel]["password"] = hash_password(nueva_pass)
+    if st.button("Resetear"):
+        if new_pass:
+            usuarios[u]["password"] = hash_password(new_pass)
             save_data(data)
-            st.success("Contraseña actualizada")
+            st.success("Clave actualizada")
+        else:
+            st.error("Ingresá una contraseña")
