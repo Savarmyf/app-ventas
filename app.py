@@ -75,7 +75,7 @@ if ADMIN_USERNAME not in usuarios:
     }
     save_data(data)
 
-# -------------------- Login --------------------
+
 # -------------------- Login --------------------
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
@@ -129,6 +129,7 @@ if st.session_state.usuario is None:
             st.error("Ingresá tu usuario primero.")
 
     st.stop()
+usuario = st.session_state.usuario
 
 
 # -------------------- Mensaje motivacional --------------------
@@ -289,6 +290,7 @@ elif seccion == "👑 Admin":
         st.dataframe(df_all, use_container_width=True)
     else:
         st.caption("Todavía no hay ventas globales.")
+
 
 
 
