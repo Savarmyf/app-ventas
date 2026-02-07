@@ -134,8 +134,23 @@ if st.session_state.usuario is None:
             st.error("Ingresá tu usuario primero.")
 
     st.stop()
+    
 usuario = st.session_state.usuario
 
+# -------------------- App principal --------------------
+usuario = st.session_state.usuario
+rol = usuarios.get(usuario, {}).get("rol", "miembro")
+
+st.sidebar.success(f"👤 Sesión: {usuario} ({rol})")
+
+if st.sidebar.button("Cerrar sesión"):
+    st.session_state.usuario = None
+    st.rerun()
+
+menu = st.sidebar.radio(
+    "📂 Menú",
+    ["Inicio", "Contactos", "Demos", "Ventas", "Notas"] + (["Admin"] if rol == "admin" else [])
+)
 
 # -------------------- Mensaje motivacional --------------------
 st.subheader("💡 Mensaje para hoy")
@@ -295,6 +310,7 @@ elif seccion == "👑 Admin":
         st.dataframe(df_all, use_container_width=True)
     else:
         st.caption("Todavía no hay ventas globales.")
+
 
 
 
