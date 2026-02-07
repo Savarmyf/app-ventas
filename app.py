@@ -176,61 +176,6 @@ FRASES = [
 ]
 st.info("✨ " + random.choice(FRASES))
 
-# -------------------- Secciones --------------------
-if menu == "Inicio":
-    st.header("🏠 Inicio")
-    st.write("Bienvenido al sistema.")
-
-elif menu == "Contactos":
-    st.header("📞 Contactos")
-    # tu sección de contactos
-
-elif menu == "Demos":
-    st.header("🎯 Demostraciones")
-    # tu sección de demos
-
-elif menu == "Ventas":
-    st.header("💰 Ventas")
-    # tu sección de ventas
-
-elif menu == "Notas":
-    st.header("📝 Notas")
-    # tu sección de notas
-
-elif menu == "Admin" and rol == "admin":
-    st.header("👑 Panel de Administración")
-
-    st.subheader("📦 Productos")
-    for nombre, info in productos.items():
-        with st.expander(nombre):
-            nuevo_precio = st.number_input("Precio", value=float(info.get("precio", 0.0)))
-            nuevo_costo = st.number_input("Costo", value=float(info.get("costo", 0.0)))
-            nuevos_puntos = st.number_input("Puntos", value=float(info.get("puntos", 0.0)))
-
-            if st.button(f"Guardar {nombre}"):
-                productos[nombre]["precio"] = nuevo_precio
-                productos[nombre]["costo"] = nuevo_costo
-                productos[nombre]["puntos"] = nuevos_puntos
-                save_data(data)
-                st.success("Producto actualizado")
-                st.rerun()
-
-    st.subheader("👥 Usuarios")
-    for u, info in usuarios.items():
-        if u == ADMIN_USERNAME:
-            continue
-
-        with st.expander(u):
-            nuevo_pass = st.text_input(f"Nueva contraseña para {u}", type="password")
-            if st.button(f"Resetear clave {u}"):
-                usuarios[u]["password"] = hash_password(nuevo_pass)
-                save_data(data)
-                st.success("Contraseña actualizada")
-                st.rerun()
-
-    st.subheader("📩 Mensajes al admin")
-    for m in mensajes_admin:
-        st.info(f"{m['fecha']} - {m['usuario']}: {m['mensaje']}")
 
 # -------------------- Dashboard --------------------
 if seccion == "📊 Dashboard":
@@ -361,6 +306,7 @@ elif seccion == "👑 Admin":
         st.dataframe(df_all, use_container_width=True)
     else:
         st.caption("Todavía no hay ventas globales.")
+
 
 
 
