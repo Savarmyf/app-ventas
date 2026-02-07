@@ -147,6 +147,13 @@ if st.sidebar.button("Cerrar sesión"):
     st.session_state.usuario = None
     st.rerun()
 
+# -------------------- Sidebar --------------------
+with st.sidebar:
+    opciones = ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "📝 Notas"]
+    if usuarios[usuario]["rol"] == "admin":
+        opciones.append("👑 Admin")
+
+    seccion = st.radio("Menú", opciones)
 
 # -------------------- Mensaje motivacional --------------------
 st.subheader("💡 Mensaje para hoy")
@@ -168,15 +175,6 @@ FRASES = [
     "Aunque sea 1 hoy, suma.",
 ]
 st.info("✨ " + random.choice(FRASES))
-
-# -------------------- Sidebar --------------------
-with st.sidebar:
-    opciones = ["📊 Dashboard", "🗓 Registro", "🛒 Ventas", "💰 Balance", "📝 Notas"]
-    if usuarios[usuario]["rol"] == "admin":
-        opciones.append("👑 Admin")
-
-    seccion = st.radio("Menú", opciones)
-
 
 # -------------------- Secciones --------------------
 if menu == "Inicio":
@@ -363,6 +361,7 @@ elif seccion == "👑 Admin":
         st.dataframe(df_all, use_container_width=True)
     else:
         st.caption("Todavía no hay ventas globales.")
+
 
 
 
