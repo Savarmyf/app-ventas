@@ -30,7 +30,8 @@ def init_data():
             "notas": {},
             "productos": {},
             "ingresos": {},
-            "costos": {}
+            "costos": {},
+            "mensajes_admin": []
         }
         DATA_FILE.write_text(json.dumps(base, indent=2))
 
@@ -53,10 +54,6 @@ data.setdefault("productos", {})
 data.setdefault("ingresos", {})
 data.setdefault("costos", {})
 data.setdefault("mensajes_admin", [])
-mensajes_admin = data["mensajes_admin"]
-
-
-save_data(data)  # asegura estructura mínima
 
 usuarios = data["usuarios"]
 registros = data["registros"]
@@ -64,6 +61,14 @@ demostraciones = data["demostraciones"]
 productos = data["productos"]
 notas = data["notas"]
 ingresos = data["ingresos"]
+mensajes_admin = data["mensajes_admin"]
+
+# Blindaje de usuarios viejos (agrega rol por defecto)
+for u, info in usuarios.items():
+    if "rol" not in info:
+        info["rol"] = "miembro"
+    if "miembros" not in info:
+        info["miembros"] = []
 
 # Crear admin por defecto si no existe
 if ADMIN_USERNAME not in usuarios:
@@ -73,8 +78,8 @@ if ADMIN_USERNAME not in usuarios:
         "lider": None,
         "miembros": []
     }
-    save_data(data)
 
+save_data(data)  # asegura estructura mínima
 
 # -------------------- Login --------------------
 if "usuario" not in st.session_state:
@@ -213,7 +218,7 @@ elif seccion == "🛒 Ventas":
 elif seccion == "💰 Balance":
     st.subheader("📦 Productos")
 
-    if usuarios[usuario]["rol"] == "admin":
+    if usuarios.get(usuario, {}).get("rol") == "admin":
         with st.expander("Agregar / Editar producto"):
             nombre = st.text_input("Nombre")
             costo = st.number_input("Costo", min_value=0.0)
@@ -290,6 +295,7 @@ elif seccion == "👑 Admin":
         st.dataframe(df_all, use_container_width=True)
     else:
         st.caption("Todavía no hay ventas globales.")
+
 
 
 
